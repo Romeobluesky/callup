@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
+import 'customer_search_screen.dart';
+import 'db_list_screen.dart';
+import 'auto_call_screen.dart';
+import 'stats_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,27 +30,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // Header
                   _buildHeader(),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
 
                   // Consultant Card
                   _buildConsultantCard(),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 20),
 
                   // Today's Statistics Card
                   _buildTodayStatsCard(),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 20),
 
                   // Statistics Cards Row
                   _buildStatisticsRow(),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
 
                   // List Card
                   _buildListCard(),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 30),
 
                   // START Button
                   _buildStartButton(),
@@ -65,9 +69,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: CustomBottomNavigationBar(
               selectedIndex: _selectedIndex,
               onItemTapped: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
+                if (index == 1) {
+                  // Auto Call 아이콘 클릭 시 Auto Call 페이지로 이동
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 200),
+                      pageBuilder: (context, animation, _) =>
+                          const AutoCallScreen(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.1, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                } else if (index == 2) {
+                  // 고객관리 아이콘 클릭 시 고객 검색 페이지로 이동
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 200),
+                      pageBuilder: (context, animation, _) =>
+                          const CustomerSearchScreen(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.1, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                } else if (index == 3) {
+                  // 현황 아이콘 클릭 시 통계 페이지로 이동
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 200),
+                      pageBuilder: (context, animation, _) =>
+                          const StatsScreen(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.1, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                } else {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                }
               },
             ),
           ),
@@ -449,71 +539,93 @@ class _DashboardScreenState extends State<DashboardScreen> {
             (index) => Padding(
               padding: EdgeInsets.only(bottom: index < 2 ? 8 : 0),
               child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9F8EB),
-                      borderRadius: BorderRadius.circular(5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          offset: const Offset(0, 4),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // 날짜
-                        Text(
-                          listData[index]['date']!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF585667),
-                          ),
-                        ),
-                        // 제목
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 15),
-                            child: Text(
-                              listData[index]['title']!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF585667),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ),
-                        // 갯수
-                        Text(
-                          listData[index]['count']!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF585667),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 12,
                 ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9F8EB),
+                  borderRadius: BorderRadius.circular(5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      offset: const Offset(0, 4),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // 날짜
+                    Text(
+                      listData[index]['date']!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF585667),
+                      ),
+                    ),
+                    // 제목
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        child: Text(
+                          listData[index]['title']!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF585667),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                    // 갯수
+                    Text(
+                      listData[index]['count']!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF585667),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          ),
           const SizedBox(height: 8),
           // More button
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                // Handle more list
+                // DB 리스트 페이지로 이동
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    transitionDuration: const Duration(milliseconds: 200),
+                    pageBuilder: (context, animation, _) => const DbListScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.1, 0.0),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        ),
+                      );
+                    },
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF524C8A),

@@ -26,8 +26,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // Navigate to dashboard without validation
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const DashboardScreen(),
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (context, animation, _) => const DashboardScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0.0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+              child: child,
+            ),
+          );
+        },
       ),
     );
   }
