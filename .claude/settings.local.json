@@ -5,7 +5,8 @@
       "Bash(git add -A)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 네이티브 Android 오버레이 시스템 구현 및 자동 통화 기능 개선\n\n- 네이티브 Android 오버레이 시스템 구현 (임시 비활성화)\n  - OverlayService.kt: Foreground Service로 오버레이 생명주기 관리\n  - OverlayView.kt: 전화 앱 위에 표시되는 네이티브 View\n  - overlay_service.dart: Flutter-Native 브릿지\n  - MainActivity.kt: MethodChannel 핸들러 추가\n\n- 자동 통화 기능 개선\n  - AutoCallService: 싱글톤 패턴으로 자동 통화 로직 관리\n  - PhoneService: 전화 걸기 및 상태 모니터링\n  - DBManager: DB 선택 및 관리\n  - 3초 카운트다운 타이머 구현\n  - 통화 상태 감지 및 결과 입력 화면 연동\n\n- CSV 파일 처리 및 고객 데이터 관리\n  - CSV 파일 로드 및 EUC-KR 인코딩 지원\n  - 고객 검색 및 상세 정보 표시\n  - CallResultScreen에서 통화 결과 저장\n\n- 권한 처리\n  - SYSTEM_ALERT_WINDOW (오버레이)\n  - FOREGROUND_SERVICE (백그라운드 실행)\n  - CALL_PHONE, READ_PHONE_STATE (전화 기능)\n\n- 알려진 이슈\n  - 오버레이 권한 요청 시 크래시 발생 (임시 비활성화)\n  - 3초 타임아웃 미작동 (전화 앱 전환 시 타이머 중단)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git rebase --continue)",
-      "Bash(git add .claude/settings.local.json)"
+      "Bash(git add .claude/settings.local.json)",
+      "Bash(git push origin main --force-with-lease)"
     ],
     "deny": [],
     "ask": []
