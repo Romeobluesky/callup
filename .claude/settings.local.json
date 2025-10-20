@@ -1,11 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter:*)",
-      "Bash(git checkout lib/screens/call_result_screen.dart)",
-      "Bash(cat \"c:/Users/hyesu/Desktop/dev/VSCODE/callup/lib/widgets/custom_bottom_navigation_bar.dart\")",
-      "Bash(find lib/screens -name \"*.dart\" -exec grep -l \"CustomBottomNavigationBar\" {} ;)",
-      "Bash(git checkout lib/screens/customer_search_screen.dart)"
+      "Bash(git add .)",
+      "Bash(git add -A)"
     ],
     "deny": [],
     "ask": []

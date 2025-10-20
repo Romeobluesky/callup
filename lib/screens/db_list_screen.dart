@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
+import '../services/db_manager.dart';
 import 'dashboard_screen.dart';
+import 'auto_call_screen.dart';
 
 class DbListScreen extends StatefulWidget {
   const DbListScreen({super.key});
@@ -16,6 +18,14 @@ class _DbListScreenState extends State<DbListScreen> {
 
   // 샘플 DB 리스트 데이터
   final List<Map<String, dynamic>> _dbListData = [
+    {
+      'id': 'customers_20251020',
+      'fileName': 'customers.csv',
+      'date': '2025-10-20',
+      'title': '테스트01_인천',
+      'total': 8,
+      'unused': 8,
+    },
     {
       'date': '2025-10-14',
       'title': '이벤트01_251014',
@@ -410,58 +420,88 @@ class _DbListScreenState extends State<DbListScreen> {
   }
 
   Widget _buildListItem(Map<String, dynamic> item) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F8EB),
-        borderRadius: BorderRadius.circular(5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            offset: const Offset(0, 4),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // 날짜
-          Text(
-            item['date'],
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF585667),
-            ),
-          ),
-          // 제목
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Text(
-                item['title'],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF585667),
+    return GestureDetector(
+      onTap: () {
+        // DB 선택
+        DBManager().selectDB(item);
+
+        // AutoCallScreen으로 이동
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 200),
+            pageBuilder: (context, animation, _) => const AutoCallScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.1, 0.0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+              );
+            },
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9F8EB),
+          borderRadius: BorderRadius.circular(5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              offset: const Offset(0, 4),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // 날짜
+            Text(
+              item['date'],
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF585667),
               ),
             ),
-          ),
-          // 갯수
-          Text(
-            '${item['total']}/${item['unused']}',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF585667),
+            // 제목
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: Text(
+                  item['title'],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF585667),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
             ),
-          ),
-        ],
+            // 갯수
+            Text(
+              '${item['total']}/${item['unused']}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF585667),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

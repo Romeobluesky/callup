@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
+import '../services/auto_call_service.dart';
 import 'dashboard_screen.dart';
 import 'customer_search_screen.dart';
 import 'stats_screen.dart';
+import 'auto_call_screen.dart';
 
 class CallResultScreen extends StatefulWidget {
   final Map<String, dynamic> customer;
@@ -891,34 +893,91 @@ class _CallResultScreenState extends State<CallResultScreen> {
   }
 
   Widget _buildStartButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        width: double.infinity,
-        height: 60,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF0756),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'START',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.8,
+    return GestureDetector(
+      onTap: () {
+        // 자동 전화가 실행 중인지 확인
+        if (AutoCallService().isRunning) {
+          // 다음 고객으로 자동 전화 재개
+          AutoCallService().resumeAfterResult();
+
+          // AutoCallScreen으로 복귀
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              transitionDuration: const Duration(milliseconds: 200),
+              pageBuilder: (context, animation, _) => const AutoCallScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(-0.1, 0.0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: child,
+                  ),
+                );
+              },
+            ),
+          );
+        } else {
+          // 자동 전화가 실행 중이 아니면 그냥 AutoCallScreen으로 이동
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              transitionDuration: const Duration(milliseconds: 200),
+              pageBuilder: (context, animation, _) => const AutoCallScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(-0.1, 0.0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: child,
+                  ),
+                );
+              },
+            ),
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          width: double.infinity,
+          height: 60,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF0756),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'START',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.8,
+                ),
               ),
-            ),
-            SizedBox(width: 10),
-            Icon(
-              Icons.arrow_forward,
-              color: Colors.white,
-              size: 32,
-            ),
-          ],
+              SizedBox(width: 10),
+              Icon(
+                Icons.arrow_forward,
+                color: Colors.white,
+                size: 32,
+              ),
+            ],
+          ),
         ),
       ),
     );

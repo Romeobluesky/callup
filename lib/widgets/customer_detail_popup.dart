@@ -1,10 +1,105 @@
 import 'package:flutter/material.dart';
-import '../screens/call_screen.dart';
+import '../screens/call_result_screen.dart';
+import '../services/phone_service.dart';
 
-class CustomerDetailPopup extends StatelessWidget {
+class CustomerDetailPopup extends StatefulWidget {
   final Map<String, dynamic> customer;
 
   const CustomerDetailPopup({super.key, required this.customer});
+
+  @override
+  State<CustomerDetailPopup> createState() => _CustomerDetailPopupState();
+}
+
+class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsBindingObserver {
+  DateTime? _callStartTime;
+  bool _isCallInProgress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isCallInProgress) {
+      _handleCallEnded();
+    }
+  }
+
+  Future<void> _makePhoneCall() async {
+    final phoneNumber = widget.customer['phone'] ?? '';
+
+    if (!PhoneService.isValidPhoneNumber(phoneNumber)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('유효하지 않은 전화번호입니다.')),
+        );
+      }
+      return;
+    }
+
+    final success = await PhoneService.makePhoneCall(phoneNumber);
+
+    if (success) {
+      setState(() {
+        _callStartTime = DateTime.now();
+        _isCallInProgress = true;
+      });
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('전화를 걸 수 없습니다.')),
+        );
+      }
+    }
+  }
+
+  void _handleCallEnded() {
+    if (_callStartTime == null) return;
+
+    final callDuration = DateTime.now().difference(_callStartTime!);
+    final callDurationInSeconds = callDuration.inSeconds;
+
+    setState(() {
+      _isCallInProgress = false;
+      _callStartTime = null;
+    });
+
+    Navigator.of(context).pop();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (context, animation, _) => CallResultScreen(
+          customer: widget.customer,
+          callDuration: callDurationInSeconds,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0.0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,33 +134,7 @@ class CustomerDetailPopup extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        transitionDuration: const Duration(milliseconds: 200),
-                        pageBuilder: (context, animation, _) => CallScreen(
-                          customer: customer,
-                        ),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.1, 0.0),
-                                end: Offset.zero,
-                              ).animate(CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutCubic,
-                              )),
-                              child: child,
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
+                  onTap: _makePhoneCall,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
@@ -119,7 +188,7 @@ class CustomerDetailPopup extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: Text(
-                      '제목 : ${customer['event']}     #102354',
+                      '제목 : ${widget.customer['event']}     #102354',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -130,7 +199,7 @@ class CustomerDetailPopup extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: Text(
-                      '분배날짜 : ${customer['date']}',
+                      '분배날짜 : ${widget.customer['date']}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -151,37 +220,37 @@ class CustomerDetailPopup extends StatelessWidget {
                   Row(
                     children: [
                       _buildTableLabel('전화번호', labelWidth, isFirst: true),
-                      _buildTableValue(customer['phone'], valueWidth, isFirst: true),
+                      _buildTableValue(widget.customer['phone'], valueWidth, isFirst: true),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('고객정보1', labelWidth),
-                      _buildTableValue(customer['name'], valueWidth),
+                      _buildTableValue(widget.customer['name'], valueWidth),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('고객정보2', labelWidth),
-                      _buildTableValue('인천 부평구', valueWidth),
+                      _buildTableValue(widget.customer['info2'] ?? '', valueWidth),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('고객정보3', labelWidth),
-                      _buildTableValue('쿠팡 이벤트', valueWidth),
+                      _buildTableValue(widget.customer['info3'] ?? '', valueWidth),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('통화결과', labelWidth),
-                      _buildTableValue(customer['callStatus'] ?? '미사용', valueWidth),
+                      _buildTableValue(widget.customer['callStatus'] ?? '미사용', valueWidth),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('상담결과', labelWidth),
-                      _buildTableValue(customer['customerType'] ?? '', valueWidth),
+                      _buildTableValue(widget.customer['customerType'] ?? '', valueWidth),
                     ],
                   ),
                   Row(
@@ -194,7 +263,7 @@ class CustomerDetailPopup extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTableLabel('메모', labelWidth, isLarge: true),
-                      _buildTableValue(customer['memo'] ?? '', valueWidth, isLarge: true),
+                      _buildTableValue(widget.customer['memo'] ?? '', valueWidth, isLarge: true),
                     ],
                   ),
                 ],

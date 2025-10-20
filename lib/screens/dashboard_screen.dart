@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
+import '../services/db_manager.dart';
 import 'customer_search_screen.dart';
 import 'db_list_screen.dart';
 import 'auto_call_screen.dart';
@@ -510,11 +511,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth * 0.9;
 
-    final List<Map<String, String>> listData = [
-      {'date': '2025-10-14', 'title': '이벤트01_251014', 'count': '500/250'},
-      {'date': '2025-10-12', 'title': '서울경기_251012', 'count': '500/420'},
-      {'date': '2025-10-10', 'title': '인천부평구_251010', 'count': '500/500'},
-      {'date': '2025-10-07', 'title': '이벤트01_251007', 'count': '500/500'},
+    // 실제로는 customers.csv 파일 정보를 표시
+    final List<Map<String, dynamic>> listData = [
+      {
+        'id': 'customers_20251020',
+        'fileName': 'customers.csv',
+        'date': '2025-10-20',
+        'title': '테스트01_인천',
+        'total': 8,
+        'unused': 8,
+        'count': '8/8'
+      },
+      {'date': '2025-10-14', 'title': '이벤트01_251014', 'total': 500, 'unused': 250, 'count': '500/250'},
+      {'date': '2025-10-12', 'title': '서울경기_251012', 'total': 500, 'unused': 420, 'count': '500/420'},
+      {'date': '2025-10-10', 'title': '인천부평구_251010', 'total': 500, 'unused': 500, 'count': '500/500'},
     ];
 
     return Container(
@@ -538,61 +548,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
             listData.length > 3 ? 3 : listData.length,
             (index) => Padding(
               padding: EdgeInsets.only(bottom: index < 2 ? 8 : 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9F8EB),
-                  borderRadius: BorderRadius.circular(5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      offset: const Offset(0, 4),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // 날짜
-                    Text(
-                      listData[index]['date']!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF585667),
-                      ),
-                    ),
-                    // 제목
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        child: Text(
-                          listData[index]['title']!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF585667),
+              child: GestureDetector(
+                onTap: () {
+                  // DB 선택
+                  DBManager().selectDB(listData[index]);
+
+                  // AutoCallScreen으로 이동
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 200),
+                      pageBuilder: (context, animation, _) => const AutoCallScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.1, 0.0),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            )),
+                            child: child,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9F8EB),
+                    borderRadius: BorderRadius.circular(5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        offset: const Offset(0, 4),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // 날짜
+                      Text(
+                        listData[index]['date']!.toString(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF585667),
                         ),
                       ),
-                    ),
-                    // 갯수
-                    Text(
-                      listData[index]['count']!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF585667),
+                      // 제목
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Text(
+                            listData[index]['title']!.toString(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF585667),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      // 갯수
+                      Text(
+                        listData[index]['count']!.toString(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF585667),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

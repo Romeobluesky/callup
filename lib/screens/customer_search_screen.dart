@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:csv/csv.dart';
+import 'package:charset_converter/charset_converter.dart';
+import 'dart:typed_data';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../widgets/customer_detail_popup.dart';
 import 'dashboard_screen.dart';
@@ -17,69 +21,152 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
   final int _selectedIndex = 2; // 고객관리 탭 선택됨
   final TextEditingController _searchController = TextEditingController();
 
-  // 샘플 데이터
-  final List<Map<String, dynamic>> _customerData = [
-    {
-      'date': '2025-10-01',
-      'event': '이벤트01_경기인천',
-      'name': '김숙자',
-      'phone': '010-1234-5687',
-      'callStatus': '통화성공',
-      'callDateTime': '2025-10-15  15:25:00',
-      'callDuration': '00:11:24',
-      'customerType': '가망고객',
-      'memo': '다음주에 다시 통화하기로함',
-      'hasAudio': true,
-    },
-    {
-      'date': '2025-10-01',
-      'event': '이벤트01_경기인천',
-      'name': '정아영',
-      'phone': '010-8521-7412',
-      'callStatus': '부재중',
-      'callDateTime': '2025-10-14  15:25:00',
-      'callDuration': '00:11:24',
-      'customerType': '가망고객',
-      'memo': '안받음',
-      'hasAudio': false,
-    },
-    {
-      'date': '2025-10-01',
-      'event': '이벤트01_경기인천',
-      'name': '이민희',
-      'phone': '010-5632-8547',
-      'callStatus': '미사용',
-      'callDateTime': null,
-      'callDuration': null,
-      'customerType': null,
-      'memo': null,
-      'hasAudio': false,
-    },
-    {
-      'date': '2025-10-01',
-      'event': '이벤트01_경기인천',
-      'name': '박정민',
-      'phone': '010-2541-3698',
-      'callStatus': '미사용',
-      'callDateTime': null,
-      'callDuration': null,
-      'customerType': null,
-      'memo': null,
-      'hasAudio': false,
-    },
-    {
-      'date': '2025-10-01',
-      'event': '이벤트01_경기인천',
-      'name': '김민수',
-      'phone': '010-3698-2541',
-      'callStatus': '미사용',
-      'callDateTime': null,
-      'callDuration': null,
-      'customerType': null,
-      'memo': null,
-      'hasAudio': false,
-    },
-  ];
+  // CSV에서 로드한 데이터
+  List<Map<String, dynamic>> _customerData = [];
+  List<Map<String, dynamic>> _filteredCustomerData = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomerData();
+  }
+
+  // CSV 파일에서 고객 데이터 로드
+  Future<void> _loadCustomerData() async {
+    try {
+      debugPrint('=== CSV 로딩 시작 ===');
+
+      // ByteData로 읽어서 EUC-KR 디코딩
+      debugPrint('파일 읽기 시작: assets/test_data/customers.csv');
+      final ByteData bytes = await rootBundle.load('assets/test_data/customers.csv');
+      debugPrint('파일 크기: ${bytes.lengthInBytes} bytes');
+
+      final Uint8List uint8list = bytes.buffer.asUint8List();
+
+      // EUC-KR을 UTF-8로 변환
+      debugPrint('EUC-KR → UTF-8 변환 시작');
+      final String csvString = await CharsetConverter.decode("EUC-KR", uint8list);
+      debugPrint('변환 완료, 문자열 길이: ${csvString.length}');
+
+      // CSV 파싱
+      debugPrint('CSV 파싱 시작');
+      List<List<dynamic>> rowsAsListOfValues = const CsvToListConverter().convert(
+        csvString,
+        eol: '\n',
+        fieldDelimiter: ',',
+      );
+      debugPrint('파싱 완료: ${rowsAsListOfValues.length}행');
+
+      if (rowsAsListOfValues.isEmpty) {
+        debugPrint('경고: CSV 데이터가 비어있습니다');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      debugPrint('첫 번째 행 (헤더): ${rowsAsListOfValues[0]}');
+
+      // 데이터 파싱 (헤더 스킵하고 인덱스로 직접 접근)
+      // CSV 컬럼 순서: 제목, 전화번호, 고객정보1, 고객정보2, 고객정보3, 고객정보4, 날짜, 통화결과, 통화유형, 통화시간, 시간, 메모, 통화녹음, 통화시각, 파일업로드날짜, 데이터설명
+      final List<Map<String, dynamic>> data = [];
+      for (int i = 1; i < rowsAsListOfValues.length; i++) {
+        final row = rowsAsListOfValues[i];
+        if (row.isEmpty || row.length < 7) continue;
+
+        String getValue(int index, [String defaultValue = '']) {
+          if (index < row.length) {
+            String value = row[index].toString().trim();
+            return (value.isEmpty || value == 'null') ? defaultValue : value;
+          }
+          return defaultValue;
+        }
+
+        String? getNullableValue(int index) {
+          if (index < row.length) {
+            String value = row[index].toString().trim();
+            return (value.isEmpty || value == 'null') ? null : value;
+          }
+          return null;
+        }
+
+        // 필수 필드 매핑 (인덱스 기반)
+        final customerData = {
+          'event': getValue(0),           // 제목
+          'phone': getValue(1),           // 전화번호
+          'name': getValue(2),            // 고객정보1
+          'info2': getValue(3),           // 고객정보2
+          'info3': getValue(4),           // 고객정보3
+          'info4': getValue(5),           // 고객정보4
+          'date': getValue(14, getValue(6, '2025-10-01')), // 파일업로드날짜 (14번) 또는 날짜(6번) 폴백
+          'callStatus': getValue(7, '미사용'), // 통화결과
+          'customerType': getNullableValue(8), // 통화유형
+          'callDateTime': getNullableValue(9) != null && getNullableValue(6) != null
+              ? '${getValue(6)}  ${getValue(9)}'
+              : null, // 날짜 + 통화시간
+          'callDuration': getNullableValue(10), // 시간
+          'memo': getNullableValue(11), // 메모
+          'hasAudio': getValue(12) == 'true' || getValue(12) == '1', // 통화녹음
+          'uploadDate': getValue(14), // 파일업로드날짜
+          'description': getValue(15), // 데이터설명
+        };
+
+        data.add(customerData);
+      }
+
+      setState(() {
+        _customerData = data;
+        _filteredCustomerData = data;
+        _isLoading = false;
+      });
+
+      // 디버깅: 로드된 데이터 확인
+      debugPrint('CSV 로드 완료: ${data.length}개 고객');
+      if (data.isNotEmpty) {
+        debugPrint('첫 번째 고객: ${data[0]}');
+      }
+    } catch (e) {
+      debugPrint('CSV 로드 에러: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // 검색 필터링
+  void _filterCustomers(String query) {
+    debugPrint('검색어: "$query"');
+
+    if (query.isEmpty) {
+      setState(() {
+        _filteredCustomerData = _customerData;
+      });
+      debugPrint('검색어 비어있음, 전체 표시: ${_customerData.length}개');
+      return;
+    }
+
+    final filtered = _customerData.where((customer) {
+      final name = (customer['name'] ?? '').toString().toLowerCase();
+      final phone = (customer['phone'] ?? '').toString().toLowerCase();
+      final event = (customer['event'] ?? '').toString().toLowerCase();
+      final callStatus = (customer['callStatus'] ?? '').toString().toLowerCase();
+      final searchLower = query.toLowerCase();
+
+      final matches = name.contains(searchLower) ||
+          phone.contains(searchLower) ||
+          event.contains(searchLower) ||
+          callStatus.contains(searchLower);
+
+      return matches;
+    }).toList();
+
+    setState(() {
+      _filteredCustomerData = filtered;
+    });
+
+    debugPrint('검색 결과: ${filtered.length}개');
+  }
 
   @override
   void dispose() {
@@ -106,7 +193,21 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                   // Search Bar
                   _buildSearchBar(),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
+
+                  // 디버그 정보
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 26),
+                    child: Text(
+                      '전체: ${_customerData.length}개 / 표시: ${_filteredCustomerData.length}개',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
 
                   // Customer List
                   Expanded(child: _buildCustomerList()),
@@ -343,9 +444,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 contentPadding: EdgeInsets.zero,
               ),
               onChanged: (value) {
-                setState(() {
-                  // 검색 로직 구현
-                });
+                _filterCustomers(value);
               },
             ),
           ),
@@ -364,14 +463,37 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth * 0.9;
 
+    // 로딩 중일 때
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFFF0756),
+        ),
+      );
+    }
+
+    // 데이터가 없을 때
+    if (_filteredCustomerData.isEmpty) {
+      return const Center(
+        child: Text(
+          '검색 결과가 없습니다.',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: EdgeInsets.zero,
-      itemCount: _customerData.length,
+      itemCount: _filteredCustomerData.length,
       itemBuilder: (context, index) {
-        final customer = _customerData[index];
+        final customer = _filteredCustomerData[index];
         return Padding(
           padding: EdgeInsets.only(
-            bottom: index < _customerData.length - 1 ? 10 : 0,
+            bottom: index < _filteredCustomerData.length - 1 ? 10 : 0,
           ),
           child: Center(child: _buildCustomerCard(customer, cardWidth)),
         );
@@ -403,16 +525,16 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
         ),
       child: Column(
         children: [
-          // 날짜 및 이벤트 (같은 줄)
+          // 업로드 날짜 및 이벤트 제목 (같은 줄)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             child: Row(
               children: [
-                // 날짜 (왼쪽 고정폭)
+                // 파일 업로드 날짜 (왼쪽 고정폭)
                 SizedBox(
                   width: 80,
                   child: Text(
-                    customer['date'],
+                    customer['date'] ?? '',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -424,7 +546,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 Expanded(
                   child: Center(
                     child: Text(
-                      customer['event'],
+                      customer['event'] ?? '',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
