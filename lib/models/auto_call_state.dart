@@ -3,7 +3,9 @@ enum AutoCallStatus {
   idle,        // 대기 중
   dialing,     // 발신 중
   ringing,     // 응답 대기 (카운트다운)
-  connected,   // 통화 연결됨
+  connected,   // 통화 연결됨 (오토콜 일시정지)
+  callEnded,   // 통화 종료됨 (결과 입력 페이지로 이동)
+  paused,      // 결과 등록 후 일시정지 (다음 고객 대기)
   completed,   // 전체 완료
 }
 

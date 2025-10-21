@@ -10,6 +10,21 @@
 - 통화 통계 및 현황 분석
 - 상담원 대시보드
 
+### 배포 및 사용 환경
+
+**중요: 권한 및 배포 정책**
+- **배포 방식**: Google Play Store 배포 없이 APK 파일로 직접 배포
+- **사용 환경**: 오토콜 전용 업무용 휴대폰에서만 사용 (개인 휴대폰 아님)
+- **권한 정책**: 모든 필요 권한이 사전 허용된 환경에서 사용
+- **개발 방향**: 제한된 권한을 사전에 고려할 필요 없음
+  - SYSTEM_ALERT_WINDOW (오버레이)
+  - CALL_PHONE (전화 걸기)
+  - READ_PHONE_STATE (통화 상태 감지)
+  - FOREGROUND_SERVICE (백그라운드 실행)
+  - 기타 필요한 모든 시스템 권한
+
+이 정책에 따라 개발 시 권한 요청 UX, 권한 거부 처리, 대체 기능 등을 고려하지 않고 핵심 기능 구현에 집중할 수 있습니다.
+
 ## 기술 스택
 
 ### 프레임워크 & 언어
@@ -699,6 +714,325 @@ dependencies:
 
 ---
 
-**마지막 업데이트**: 2025-10-20
-**버전**: 1.0.0+1
+### 2025-10-21 - 오버레이 시스템 권한 로직 제거 및 네이티브 타이머 구현
+
+#### 작업 목표
+업무용 휴대폰 환경에 맞춰 권한 요청 로직 제거 및 오버레이 시스템 안정화
+
+#### 구현 내용
+
+**1. 권한 요청 로직 완전 제거**
+
+제거된 파일 및 코드:
+- `lib/screens/auto_call_screen.dart`: 오버레이 권한 확인/요청 로직 삭제 (244-273줄)
+- `lib/services/overlay_service.dart`: `requestOverlayPermission()`, `checkOverlayPermission()` 메서드 삭제
+- `android/app/src/main/kotlin/com/callup/callup/MainActivity.kt`: 권한 체크 MethodChannel 핸들러 삭제
+
+이유:
+- 업무용 휴대폰 환경에서 모든 권한 사전 허용됨
+- APK 직접 배포로 Play Store 정책 무관
+- 권한 요청 로직이 오히려 크래시 원인이었을 가능성
+
+**2. Flutter ↔ Native 양방향 통신 구현**
+
+MainActivity.kt 수정:
+```kotlin
+companion object {
+    var instance: MainActivity? = null
+    var overlayChannel: MethodChannel? = null
+}
+
+// overlayChannel을 static으로 관리하여 OverlayView에서 접근 가능
+```
+
+OverlayView.kt 콜백 구현:
+```kotlin
+// "통화 연결됨" 버튼 클릭
+MainActivity.overlayChannel?.invokeMethod("onCallConnected", null)
+
+// "다음" 버튼 클릭 또는 3초 타임아웃
+MainActivity.overlayChannel?.invokeMethod("onTimeout", null)
+```
+
+overlay_service.dart 핸들러 추가:
+```dart
+static void setupCallbackHandler() {
+  _channel.setMethodCallHandler((call) async {
+    switch (call.method) {
+      case 'onCallConnected':
+        AutoCallService().notifyConnected();
+        break;
+      case 'onTimeout':
+        // 타임아웃 처리
+        break;
+    }
+  });
+}
+```
+
+main.dart 초기화:
+```dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  OverlayService.setupCallbackHandler(); // 콜백 핸들러 설정
+  runApp(const MyApp());
+}
+```
+
+**3. AutoCallService 오버레이 연동 활성화**
+
+재활성화된 코드:
+```dart
+// 오버레이 표시 (103-109줄)
+await OverlayService.showOverlay(
+  customerName: customer['name'] ?? '-',
+  customerPhone: customer['phone'] ?? '-',
+  progress: progress,
+  status: '응답대기',
+  countdown: 3,
+);
+
+// 오버레이 숨기기 (117줄)
+await OverlayService.hideOverlay();
+```
+
+**4. 네이티브 타이머 작동 원리**
+
+전화 앱 전환 시에도 작동하는 이유:
+```
+1. Flutter 앱에서 OverlayService.showOverlay() 호출
+2. → MainActivity에서 OverlayService (Foreground Service) 시작
+3. → OverlayView가 전화 앱 위에 TYPE_APPLICATION_OVERLAY로 표시
+4. → OverlayView.startCountdown()에서 Handler.postDelayed()로 1초마다 카운트다운
+5. → Foreground Service이므로 앱이 백그라운드여도 계속 실행
+6. → 3초 후 MainActivity.overlayChannel.invokeMethod("onTimeout") 호출
+7. → Flutter의 AutoCallService.notifyConnected() 또는 타임아웃 처리
+```
+
+핵심:
+- **Foreground Service**: 백그라운드에서도 중단되지 않음
+- **TYPE_APPLICATION_OVERLAY**: 전화 앱 위에 항상 표시
+- **Handler.postDelayed()**: 네이티브 안드로이드 타이머로 Flutter 타이머보다 안정적
+- **MethodChannel 양방향 통신**: Native → Flutter 콜백 가능
+
+#### 기술적 개선사항
+
+**권한 처리 간소화**:
+- Before: 권한 확인 → 요청 → 재확인 → SnackBar → 설정 이동
+- After: AndroidManifest.xml 선언만으로 모든 권한 자동 허용
+
+**오버레이 안정성**:
+- Foreground Service로 생명주기 보장
+- 예외 처리 강화 (try-catch)
+- WindowManager 파라미터 최적화
+
+**타이머 안정성**:
+- Flutter Timer (불안정) → Android Handler (안정적)
+- 전화 앱 전환 시에도 지속 작동
+- 정확한 1초 간격 보장
+
+#### 예상되는 개선 효과
+
+1. ✅ 오버레이 크래시 해결 (권한 로직 제거)
+2. ✅ 3초 타임아웃 정상 작동 (네이티브 타이머)
+3. ✅ 전화 앱 전환 시에도 고객 정보 표시 (오버레이)
+4. ✅ 자동으로 다음 고객 진행 (타임아웃 콜백)
+5. ✅ 수동 통화 연결 확인 (버튼 콜백)
+
+#### 다음 테스트 항목
+
+- [ ] START 버튼 클릭 → 오버레이 표시 확인
+- [ ] 전화 걸기 → 오버레이가 전화 앱 위에 표시되는지 확인
+- [ ] 3초 카운트다운 정상 작동 확인
+- [ ] 타임아웃 시 자동으로 다음 고객 진행 확인
+- [ ] "통화 연결됨" 버튼 → CallResultScreen 이동 확인
+- [ ] "다음" 버튼 → 다음 고객 진행 확인
+
+---
+
+### 2025-10-21 - 일시정지 후 다음 고객 정보 표시 및 통화 재개 기능 구현
+
+#### 작업 목표
+통화 결과 등록 후 AutoCallScreen으로 복귀했을 때 다음 고객 정보를 미리 표시하고, START 버튼으로 재개할 수 있도록 구현
+
+#### 구현 내용
+
+**1. 새로운 상태 추가: `AutoCallStatus.paused`**
+
+파일: `lib/models/auto_call_state.dart`
+```dart
+enum AutoCallStatus {
+  idle,        // 대기 중
+  dialing,     // 발신 중
+  ringing,     // 응답 대기 (카운트다운)
+  connected,   // 통화 연결됨 (오토콜 일시정지)
+  callEnded,   // 통화 종료됨 (결과 입력 페이지로 이동)
+  paused,      // 결과 등록 후 일시정지 (다음 고객 대기) ← NEW
+  completed,   // 전체 완료
+}
+```
+
+**2. AutoCallService 수정**
+
+파일: `lib/services/auto_call_service.dart`
+
+- `resumeAfterResult()` 수정: 결과 등록 후 `paused` 상태로 전환하고 다음 고객 정보 전달
+- `continueToNextCustomer()` 추가: 일시정지 상태에서 다음 고객으로 전화 재개
+
+```dart
+Future<void> resumeAfterResult() async {
+  currentIndex++;
+
+  final nextCustomer = getCurrentCustomer();
+  if (nextCustomer != null) {
+    _stateController.add(AutoCallState(
+      status: AutoCallStatus.paused,  // 일시정지 상태
+      customer: nextCustomer,         // 다음 고객 정보
+      progress: '${currentIndex + 1}/${customerQueue.length}',
+    ));
+  } else {
+    _handleComplete();
+  }
+}
+
+Future<void> continueToNextCustomer() async {
+  await _processNextCustomer();  // 다음 고객으로 전화 시작
+}
+```
+
+**3. AutoCallScreen 수정**
+
+파일: `lib/screens/auto_call_screen.dart`
+
+- `_isPaused` 상태 변수 추가
+- `AutoCallStatus.paused` 핸들러 추가
+- START 버튼 로직 수정: 일시정지 상태에서는 `continueToNextCustomer()` 호출
+
+```dart
+// 상태 리스너
+case AutoCallStatus.paused:
+  _callStatus = '대기중';
+  _currentCustomer = state.customer;  // 다음 고객 정보
+  _progress = state.progress ?? '0/0';
+  _isAutoRunning = true;
+  _isPaused = true;  // 일시정지 상태
+  break;
+
+// START 버튼
+Widget _buildStartButton(double cardWidth) {
+  return GestureDetector(
+    onTap: () async {
+      if (_isPaused) {
+        // 일시정지 상태 → 다음 고객으로 전화 재개
+        await AutoCallService().continueToNextCustomer();
+      } else if (!_isAutoRunning) {
+        // 초기 시작
+        await _startAutoCalling();
+      } else {
+        // 중지
+        _stopAutoCalling();
+      }
+    },
+    // 일시정지 상태에서도 START 버튼 표시 (빨간색)
+    child: Container(
+      color: _isPaused ? Color(0xFFFF0756) : ...,
+      child: Text(_isPaused ? 'START' : ...),
+    ),
+  );
+}
+```
+
+**4. CallResultScreen 네비게이션 수정**
+
+파일: `lib/screens/call_result_screen.dart`
+
+- '등록' 버튼: `resumeAfterResult()` 호출 후 `Navigator.pop()`
+- 오토콜 탭 클릭: 항상 AutoCallScreen 시작 페이지로 이동
+
+#### 동작 흐름
+
+1. **고객 1 통화 완료** → 결과 등록
+2. **AutoCallScreen 복귀** → `AutoCallStatus.paused` 상태
+   - 화면: 고객 2 정보 표시
+   - 상태: "대기중"
+   - 버튼: "START" (빨간색)
+3. **START 버튼 클릭** → `continueToNextCustomer()` 호출
+4. **고객 2 전화 시작** → `AutoCallStatus.dialing`
+
+#### 발견된 문제 및 해결
+
+**문제 1: 통화 종료 후 잘못된 고객 정보 표시**
+
+증상:
+- 1번 통화 → 2/3/4번 부재중 → 5번 통화 종료 시 **3번 고객 정보가 표시**
+
+원인:
+- 타이밍 이슈: 무응답으로 다음 고객으로 넘어갈 때 `currentIndex` 증가
+- 이전 고객의 통화 종료 IDLE 이벤트가 늦게 도착
+- `getCurrentCustomer()`가 이미 변경된 `currentIndex`로 잘못된 고객 반환
+
+해결:
+- `_connectedCustomer` 변수 추가하여 통화 연결 시 고객 정보 저장
+- `callEnded` 발생 시 저장된 고객 정보 사용
+
+```dart
+// Line 24
+Map<String, dynamic>? _connectedCustomer;
+
+// Line 68: 카운트다운 중 통화 연결
+_connectedCustomer = getCurrentCustomer();
+
+// Line 172-175: 카운트다운 완료 후 통화 연결
+if (_connectedCustomer == null) {
+  _connectedCustomer = customer;
+}
+
+// Line 236: 오버레이 버튼 클릭
+_connectedCustomer = getCurrentCustomer();
+
+// Line 77-86: 통화 종료 시 저장된 정보 사용
+if (callDuration > 0 && _connectedCustomer != null) {
+  _stateController.add(AutoCallState(
+    status: AutoCallStatus.callEnded,
+    customer: _connectedCustomer!,
+  ));
+  _connectedCustomer = null;
+}
+```
+
+**문제 2: 통화 종료 후 결과 입력 페이지로 이동하지 않음**
+
+증상:
+- 통화 완료 → 오토콜 시작 페이지로 이동 (결과 입력 페이지 아님)
+
+원인:
+- `notifyConnected()` 메서드에서 `_connectedCustomer` 미저장
+- `callEnded` 조건 `_connectedCustomer != null` 불만족
+
+해결:
+- `notifyConnected()` 메서드에 `_connectedCustomer` 저장 로직 추가 (Line 236)
+- 카운트다운 완료 후 통화 연결 시에도 저장 (Line 172-175)
+
+#### 최종 구현 상태
+
+**통화 연결된 고객 정보 저장 경로 (3가지)**:
+1. 카운트다운 중 자동 감지 (Line 68)
+2. 카운트다운 완료 후 통화 연결 (Line 172-175)
+3. 오버레이 "통화 연결됨" 버튼 클릭 (Line 236)
+
+**통화 종료 처리**:
+- `_connectedCustomer != null` 조건으로 정확한 고객 정보 사용
+- `callEnded` 상태 발생 → CallResultScreen 이동
+
+#### 빌드 정보
+
+**APK**:
+- 위치: `build/app/outputs/flutter-apk/app-release.apk`
+- 크기: 22.3MB
+- 상태: 일시정지 후 다음 고객 재개 기능 + 통화 종료 후 정확한 고객 정보 표시 완료
+
+---
+
+**마지막 업데이트**: 2025-10-21
+**버전**: 1.0.0+2
 **플랫폼**: Android

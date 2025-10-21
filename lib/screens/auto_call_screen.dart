@@ -7,7 +7,6 @@ import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/auto_call_service.dart';
 import '../services/db_manager.dart';
 import '../services/phone_service.dart';
-import '../services/overlay_service.dart';
 import '../models/auto_call_state.dart';
 import 'dashboard_screen.dart';
 import 'stats_screen.dart';
@@ -27,6 +26,7 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   final int _selectedIndex = 1;
   String _callStatus = '대기중';
   bool _isAutoRunning = false; // Auto 실행 상태
+  bool _isPaused = false; // 일시정지 상태 (다음 고객 대기)
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
 
@@ -75,15 +75,25 @@ class _AutoCallScreenState extends State<AutoCallScreen>
 
   Future<void> _loadSelectedDBCustomers() async {
     final selectedDB = DBManager().selectedDB;
-    if (selectedDB != null) {
-      await _loadCustomers();
-      // 고객이 로드되면 첫 번째 고객 정보 표시
-      if (_customers.isNotEmpty) {
-        setState(() {
-          _currentCustomer = _customers[0];
-          _progress = '1/${_customers.length}';
-        });
-      }
+    if (selectedDB == null) {
+      // DB가 선택되지 않았으면 기본 DB 선택
+      debugPrint('DB가 선택되지 않아 기본 DB 선택');
+      DBManager().selectDB({
+        'date': '2025-10-14',
+        'title': '이벤트01_251014',
+        'total': 500,
+        'unused': 250,
+        'fileName': 'customers.csv',
+      });
+    }
+
+    await _loadCustomers();
+    // 고객이 로드되면 첫 번째 고객 정보 표시
+    if (_customers.isNotEmpty) {
+      setState(() {
+        _currentCustomer = _customers[0];
+        _progress = '1/${_customers.length}';
+      });
     }
   }
 
@@ -97,22 +107,41 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             _callStatus = '발신중';
             _currentCustomer = state.customer;
             _progress = state.progress ?? '0/0';
+            _isPaused = false;
             break;
           case AutoCallStatus.ringing:
             _callStatus = '응답대기';
+            _isPaused = false;
             break;
           case AutoCallStatus.connected:
-            _callStatus = '통화 연결';
+            _callStatus = '통화중';
+            _currentCustomer = state.customer;  // 통화 연결된 고객 저장
+            _isPaused = false;
+            // 통화 연결 시 오토콜 일시정지 (오버레이는 이미 숨겨짐)
+            break;
+          case AutoCallStatus.callEnded:
+            // 통화 종료 시 CallResultScreen으로 이동
             _navigateToCallResult();
+            _isPaused = false;
+            break;
+          case AutoCallStatus.paused:
+            // 결과 등록 후 일시정지 - 다음 고객 정보 표시
+            _callStatus = '대기중';
+            _currentCustomer = state.customer;  // 다음 고객 정보
+            _progress = state.progress ?? '0/0';
+            _isAutoRunning = true;  // 오토콜은 계속 실행 중
+            _isPaused = true;  // 일시정지 상태 (다음 고객 대기)
             break;
           case AutoCallStatus.completed:
             _callStatus = '완료';
             _isAutoRunning = false;
+            _isPaused = false;
             _showCompletionDialog();
             break;
           case AutoCallStatus.idle:
             _callStatus = '대기중';
             _isAutoRunning = false;
+            _isPaused = false;
             _currentCustomer = null;
             _progress = '0/0';
             break;
@@ -243,35 +272,6 @@ class _AutoCallScreenState extends State<AutoCallScreen>
 
   Future<void> _startAutoCalling() async {
     try {
-      // 오버레이 권한 확인
-      final hasPermission = await OverlayService.checkOverlayPermission();
-      debugPrint('오버레이 권한 상태: $hasPermission');
-
-      if (!hasPermission) {
-        // 권한 요청
-        debugPrint('오버레이 권한 요청 중...');
-        await OverlayService.requestOverlayPermission();
-
-        // 권한 요청 후 다시 확인
-        await Future.delayed(const Duration(milliseconds: 500));
-        final permissionGranted = await OverlayService.checkOverlayPermission();
-
-        if (!permissionGranted) {
-          debugPrint('오버레이 권한이 거부되었습니다.');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('오버레이 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-          return;
-        }
-      }
-
-      debugPrint('오버레이 권한 확인 완료');
-
       // 고객 데이터 로드
       if (_customers.isEmpty) {
         await _loadCustomers();
@@ -530,7 +530,10 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   Widget _buildStartButton(double cardWidth) {
     return GestureDetector(
       onTap: () async {
-        if (!_isAutoRunning) {
+        if (_isPaused) {
+          // PAUSED 상태 → 다음 고객으로 전화 재개
+          await AutoCallService().continueToNextCustomer();
+        } else if (!_isAutoRunning) {
           // START 클릭 → 자동 전화 시작
           await _startAutoCalling();
         } else {
@@ -542,16 +545,22 @@ class _AutoCallScreenState extends State<AutoCallScreen>
         width: cardWidth,
         height: 60,
         decoration: BoxDecoration(
-          color: _isAutoRunning
-              ? Colors.white.withValues(alpha: 0.3)
-              : const Color(0xFFFF0756),
+          color: _isPaused
+              ? const Color(0xFFFF0756)  // 일시정지 상태는 빨간색 (START와 동일)
+              : _isAutoRunning
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : const Color(0xFFFF0756),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              _isAutoRunning ? 'END' : 'START',
+              _isPaused
+                  ? 'START'  // 일시정지 상태에서는 START 표시 (다음 고객)
+                  : _isAutoRunning
+                      ? 'END'
+                      : 'START',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

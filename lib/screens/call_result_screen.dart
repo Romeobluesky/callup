@@ -266,6 +266,29 @@ class _CallResultScreenState extends State<CallResultScreen> {
                       },
                     ),
                   );
+                } else if (index == 1) {
+                  // 오토콜 - 항상 AutoCallScreen 시작 화면으로 이동
+                  Navigator.of(context).pushReplacement(
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 200),
+                      pageBuilder: (context, animation, _) => const AutoCallScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.1, 0.0),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            )),
+                            child: child,
+                          ),
+                        );
+                      },
+                    ),
+                  );
                 } else if (index == 2) {
                   // 고객관리
                   Navigator.of(context).pushReplacement(
@@ -698,7 +721,18 @@ class _CallResultScreenState extends State<CallResultScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  // 결과 저장 (TODO: 실제 저장 로직 구현)
+                  debugPrint('통화 결과 저장: $_callResult, 상담 결과: $_consultResult');
+
+                  // 자동 전화가 실행 중이면 다음 고객으로 재개
+                  if (AutoCallService().isRunning) {
+                    AutoCallService().resumeAfterResult();
+                  }
+
+                  // AutoCallScreen으로 복귀 (pop으로 변경)
+                  Navigator.pop(context);
+                },
                 child: Container(
                   width: 62,
                   height: 30,
@@ -900,86 +934,32 @@ class _CallResultScreenState extends State<CallResultScreen> {
           // 다음 고객으로 자동 전화 재개
           AutoCallService().resumeAfterResult();
 
-          // AutoCallScreen으로 복귀
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 200),
-              pageBuilder: (context, animation, _) => const AutoCallScreen(),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(-0.1, 0.0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    )),
-                    child: child,
-                  ),
-                );
-              },
-            ),
-          );
+          // AutoCallScreen으로 복귀 (pop으로 변경)
+          Navigator.pop(context);
         } else {
-          // 자동 전화가 실행 중이 아니면 그냥 AutoCallScreen으로 이동
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 200),
-              pageBuilder: (context, animation, _) => const AutoCallScreen(),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(-0.1, 0.0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    )),
-                    child: child,
-                  ),
-                );
-              },
-            ),
-          );
+          // 자동 전화가 중지된 경우
+          Navigator.pop(context);
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          width: double.infinity,
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF0756),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'START',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              SizedBox(width: 10),
-              Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 32,
-              ),
-            ],
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF0756),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          'START',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
           ),
         ),
       ),
     );
   }
+
 }

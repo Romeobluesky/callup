@@ -35,8 +35,17 @@ class OverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // 알림 채널 확인 및 생성 (안전성 강화)
+        createNotificationChannel()
+
         // Foreground Service 시작
-        startForeground(1, createNotification())
+        try {
+            startForeground(1, createNotification())
+        } catch (e: Exception) {
+            android.util.Log.e("OverlayService", "startForeground 실패: ${e.message}", e)
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         when (intent?.action) {
             ACTION_SHOW_OVERLAY -> {
@@ -93,8 +102,8 @@ class OverlayService : Service() {
                 PixelFormat.TRANSLUCENT
             )
 
-            params.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            params.y = 100
+            params.gravity = Gravity.CENTER  // 중앙에 배치
+            params.width = (resources.displayMetrics.widthPixels * 0.95).toInt()  // 화면의 95% 너비
 
             overlayView = OverlayView(this, this).apply {
                 updateData(customerName, customerPhone, progress, status, countdown)
@@ -102,7 +111,9 @@ class OverlayService : Service() {
 
             windowManager?.addView(overlayView, params)
             isOverlayShown = true
+            android.util.Log.d("OverlayService", "오버레이 표시 성공")
         } catch (e: Exception) {
+            android.util.Log.e("OverlayService", "오버레이 표시 실패: ${e.message}", e)
             e.printStackTrace()
         }
     }
@@ -131,20 +142,29 @@ class OverlayService : Service() {
     }
 
     private fun createNotification(): Notification {
-        val notificationIntent = Intent(this, MainActivity::class.java)
+        val notificationIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,
             notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("CallUp 자동 통화 중")
-            .setContentText("오토콜이 실행 중입니다")
+            .setContentTitle("오토콜 진행 중")
+            .setContentText("통화 정보를 표시하고 있습니다")
             .setSmallIcon(android.R.drawable.ic_menu_call)
             .setContentIntent(pendingIntent)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
+            .setAutoCancel(false)
             .build()
     }
 
@@ -152,10 +172,12 @@ class OverlayService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Auto Call Overlay",
+                "오토콜 통화 알림",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "오토콜 오버레이 서비스"
+                description = "통화 중 고객 정보 표시"
+                setSound(null, null)
+                enableVibration(false)
             }
 
             val notificationManager = getSystemService(NotificationManager::class.java)

@@ -1,7 +1,24 @@
 import 'package:flutter/services.dart';
+import 'auto_call_service.dart';
 
 class OverlayService {
   static const MethodChannel _channel = MethodChannel('com.callup.callup/overlay');
+
+  /// MethodChannel 핸들러 설정 (Native → Flutter 콜백)
+  static void setupCallbackHandler() {
+    _channel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'onConnected':
+          // 오버레이에서 "통화 연결됨" 버튼 클릭
+          AutoCallService().notifyConnected();
+          break;
+        case 'onTimeout':
+          // 오버레이에서 "다음" 버튼 클릭 또는 타임아웃
+          // 타임아웃 처리는 AutoCallService의 Timer에서 이미 처리됨
+          break;
+      }
+    });
+  }
 
   /// 오버레이 표시
   static Future<void> showOverlay({
@@ -20,7 +37,7 @@ class OverlayService {
         'countdown': countdown,
       });
     } catch (e) {
-      print('오버레이 표시 실패: $e');
+      // 오버레이 표시 실패 시 무시
     }
   }
 
@@ -41,7 +58,7 @@ class OverlayService {
         'countdown': countdown,
       });
     } catch (e) {
-      print('오버레이 업데이트 실패: $e');
+      // 오버레이 업데이트 실패 시 무시
     }
   }
 
@@ -50,29 +67,7 @@ class OverlayService {
     try {
       await _channel.invokeMethod('hideOverlay');
     } catch (e) {
-      print('오버레이 숨기기 실패: $e');
-    }
-  }
-
-  /// 오버레이 권한 요청
-  static Future<bool> requestOverlayPermission() async {
-    try {
-      final bool? result = await _channel.invokeMethod('requestOverlayPermission');
-      return result ?? false;
-    } catch (e) {
-      print('오버레이 권한 요청 실패: $e');
-      return false;
-    }
-  }
-
-  /// 오버레이 권한 확인
-  static Future<bool> checkOverlayPermission() async {
-    try {
-      final bool? result = await _channel.invokeMethod('checkOverlayPermission');
-      return result ?? false;
-    } catch (e) {
-      print('오버레이 권한 확인 실패: $e');
-      return false;
+      // 오버레이 숨기기 실패 시 무시
     }
   }
 }

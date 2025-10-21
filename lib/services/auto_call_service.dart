@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:phone_state/phone_state.dart';
 import '../models/auto_call_state.dart';
 import 'phone_service.dart';
-// import 'overlay_service.dart'; // 임시 비활성화
+import 'overlay_service.dart';
 
 /// 자동 전화 서비스 (Singleton)
 class AutoCallService {
@@ -20,7 +19,7 @@ class AutoCallService {
   int currentIndex = 0;
   Timer? _countdownTimer;
   Completer<CallResult>? _callCompleter;
-  StreamSubscription<PhoneStateStatus>? _phoneStateSubscription;
+  Map<String, dynamic>? _connectedCustomer;  // 통화 연결된 고객 저장
 
   // Stream 컨트롤러
   final _stateController = StreamController<AutoCallState>.broadcast();
@@ -30,16 +29,64 @@ class AutoCallService {
   Stream<AutoCallState> get stateStream => _stateController.stream;
   Stream<int> get countdownStream => _countdownController.stream;
 
+  // 통화 상태 모니터링
+  StreamSubscription<Map<String, dynamic>>? _nativePhoneStateSubscription;
+
   /// 전화 상태 모니터링 초기화
   void _initPhoneStateMonitoring() {
-    _phoneStateSubscription = PhoneService.phoneStateStream.listen((PhoneStateStatus status) {
-      debugPrint('=== 전화 상태 감지: $status ===');
+    // 네이티브 TelephonyManager 기반 상태 스트림 (기본 + callDuration)
+    _nativePhoneStateSubscription = PhoneService.nativePhoneStateStream.listen((Map<String, dynamic> data) {
+      final state = data['state'] as String;
+      final callDuration = data['callDuration'] as int;
 
-      if (status == PhoneStateStatus.CALL_STARTED) {
-        debugPrint('통화 연결됨!');
-        notifyConnected();
-      } else if (status == PhoneStateStatus.CALL_ENDED) {
-        debugPrint('통화 종료됨');
+      debugPrint('=== 네이티브 통화 상태: $state (통화시간: $callDuration초) ===');
+
+      switch (state) {
+        case 'RINGING':
+          // 착신 전화 (발신 시에는 발생하지 않음)
+          debugPrint('착신 전화 (RINGING)');
+          break;
+
+        case 'OFFHOOK':
+          // OFFHOOK 발생 (전화 걸기 시작)
+          debugPrint('OFFHOOK 감지 (전화 걸기 시작)');
+          break;
+
+        case 'IDLE':
+          // 통화 종료됨 - Call Log에서 통화 시간 확인
+          debugPrint('통화 종료됨 (IDLE) - 통화시간: $callDuration초');
+
+          // 카운트다운 중에 통화가 종료되면
+          if (_callCompleter != null && !_callCompleter!.isCompleted) {
+            _countdownTimer?.cancel();
+
+            if (callDuration > 0) {
+              // 통화시간이 0초 이상 → 상대방이 받았음
+              debugPrint('⭐⭐⭐ 통화 연결됨 (통화시간: $callDuration초) ⭐⭐⭐');
+              _connectedCustomer = getCurrentCustomer();  // 통화 연결된 고객 저장
+              _callCompleter!.complete(CallResult.connected);
+            } else {
+              // 통화시간 0초 → 무응답
+              debugPrint('무응답 (통화시간: 0초) → 타임아웃 처리');
+              _callCompleter!.complete(CallResult.timeout);
+            }
+          } else {
+            // 카운트다운이 이미 완료된 후 통화 종료
+            if (callDuration > 0 && _connectedCustomer != null) {
+              // 통화 연결된 후 종료 → CallResultScreen으로 이동
+              debugPrint('통화 종료 → CallResultScreen 전환 신호 발송');
+              debugPrint('통화 종료된 고객: ${_connectedCustomer!['name']} (저장된 정보 사용)');
+              _stateController.add(AutoCallState(
+                status: AutoCallStatus.callEnded,
+                customer: _connectedCustomer!,  // 저장된 연결 고객 정보 사용
+                progress: '${currentIndex + 1}/${customerQueue.length}',
+              ));
+              _connectedCustomer = null;  // 사용 후 초기화
+            } else {
+              debugPrint('카운트다운 완료 후 무응답 종료 (이미 타임아웃 처리됨)');
+            }
+          }
+          break;
       }
     });
   }
@@ -99,25 +146,32 @@ class AutoCallService {
     // 카운트다운 시작 후 전화 걸기
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // 오버레이 표시 (임시 비활성화 - 테스트용)
-    // await OverlayService.showOverlay(
-    //   customerName: customer['name'] ?? '-',
-    //   customerPhone: customer['phone'] ?? '-',
-    //   progress: progress,
-    //   status: '응답대기',
-    //   countdown: 3,
-    // );
+    // 오버레이 표시
+    await OverlayService.showOverlay(
+      customerName: customer['name'] ?? '-',
+      customerPhone: customer['phone'] ?? '-',
+      progress: progress,
+      status: '응답대기',
+      countdown: 10,
+    );
 
     PhoneService.makePhoneCallInBackground(customer['phone'] ?? '');
 
     // 카운트다운 완료 대기
     final result = await connectionFuture;
 
-    // 오버레이 숨기기 (임시 비활성화 - 테스트용)
-    // await OverlayService.hideOverlay();
+    // 오버레이 숨기기
+    await OverlayService.hideOverlay();
 
     if (result == CallResult.connected) {
       debugPrint('통화 연결됨 → CallResultScreen 대기');
+
+      // 통화 연결된 고객 정보 저장 (아직 저장 안 되어 있을 수 있음)
+      if (_connectedCustomer == null) {
+        _connectedCustomer = customer;
+        debugPrint('통화 연결된 고객 저장: ${customer['name']}');
+      }
+
       // 통화 연결 → CallResultScreen으로 이동
       _stateController.add(AutoCallState(
         status: AutoCallStatus.connected,
@@ -126,8 +180,13 @@ class AutoCallService {
       ));
       // 여기서 대기, resumeAfterResult()로 재개됨
     } else if (result == CallResult.timeout) {
-      debugPrint('타임아웃 → 부재중 자동 저장');
-      // 타임아웃 → 부재중 자동 저장
+      debugPrint('10초 타임아웃 → 전화 강제 종료 후 부재중 저장');
+
+      // 현재 통화 강제 종료
+      await PhoneService.endCall();
+      await Future.delayed(const Duration(milliseconds: 500)); // 통화 종료 대기
+
+      // 부재중 자동 저장
       await _saveAutoResult(customer, '부재중');
 
       // 다음 고객으로
@@ -139,12 +198,12 @@ class AutoCallService {
     }
   }
 
-  /// 3초 대기 + 통화 연결 감지
+  /// 10초 대기 + 통화 연결 감지
   Future<CallResult> _waitForConnection() async {
     _callCompleter = Completer<CallResult>();
-    int countdown = 3;
+    int countdown = 10;
 
-    debugPrint('3초 카운트다운 시작');
+    debugPrint('10초 카운트다운 시작');
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!isRunning) {
@@ -162,6 +221,8 @@ class AutoCallService {
 
       if (countdown <= 0) {
         timer.cancel();
+        debugPrint('10초 타임아웃 → 전화 강제 종료');
+
         if (!_callCompleter!.isCompleted) {
           _callCompleter!.complete(CallResult.timeout);
         }
@@ -175,6 +236,9 @@ class AutoCallService {
   void notifyConnected() {
     debugPrint('통화 연결 알림 받음');
     _countdownTimer?.cancel();
+
+    // 통화 연결된 고객 정보 저장
+    _connectedCustomer = getCurrentCustomer();
 
     if (_callCompleter != null && !_callCompleter!.isCompleted) {
       _callCompleter!.complete(CallResult.connected);
@@ -191,6 +255,32 @@ class AutoCallService {
     }
 
     currentIndex++;
+
+    // 다음 고객 정보가 있으면 paused 상태로 전환 (AutoCallScreen에 다음 고객 표시)
+    final nextCustomer = getCurrentCustomer();
+    if (nextCustomer != null) {
+      debugPrint('다음 고객 정보 표시 (일시정지 상태)');
+      _stateController.add(AutoCallState(
+        status: AutoCallStatus.paused,
+        customer: nextCustomer,
+        progress: '${currentIndex + 1}/${customerQueue.length}',
+      ));
+    } else {
+      // 다음 고객이 없으면 완료
+      _handleComplete();
+    }
+  }
+
+  /// paused 상태에서 다음 고객으로 전화 재개
+  Future<void> continueToNextCustomer() async {
+    debugPrint('=== paused 상태에서 다음 고객으로 전화 재개 ===');
+
+    if (!isRunning) {
+      debugPrint('자동 전화가 중지된 상태');
+      return;
+    }
+
+    // 현재 고객으로 전화 걸기
     await _processNextCustomer();
   }
 
@@ -232,10 +322,18 @@ class AutoCallService {
     return null;
   }
 
+  /// 다음 고객 정보 가져오기 (미리보기용)
+  Map<String, dynamic>? getNextCustomer() {
+    if (currentIndex + 1 < customerQueue.length) {
+      return customerQueue[currentIndex + 1];
+    }
+    return null;
+  }
+
   /// 리소스 정리
   void dispose() {
     _countdownTimer?.cancel();
-    _phoneStateSubscription?.cancel();
+    _nativePhoneStateSubscription?.cancel();
     _stateController.close();
     _countdownController.close();
   }

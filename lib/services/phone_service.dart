@@ -9,10 +9,22 @@ import 'package:phone_state/phone_state.dart';
 class PhoneService {
   static StreamSubscription<PhoneState>? _phoneStateSubscription;
   static final _phoneStateController = StreamController<PhoneStateStatus>.broadcast();
+  static final _fullPhoneStateController = StreamController<PhoneState>.broadcast();
+  static final _nativeStateController = StreamController<Map<String, dynamic>>.broadcast(); // 네이티브 상태 전달
   static const platform = MethodChannel('com.callup.callup/foreground');
+  static const phoneStatePlatform = MethodChannel('com.callup.callup/phone_state');
 
-  /// 전화 상태 스트림
+  // 중복 방지를 위한 이전 상태 저장
+  static String? _lastNativeState;
+
+  /// 전화 상태 스트림 (상태만)
   static Stream<PhoneStateStatus> get phoneStateStream => _phoneStateController.stream;
+
+  /// 전체 전화 상태 스트림 (PhoneState 객체)
+  static Stream<PhoneState> get fullPhoneStateStream => _fullPhoneStateController.stream;
+
+  /// 네이티브 통화 상태 스트림 (IDLE, OFFHOOK, RINGING + callDuration)
+  static Stream<Map<String, dynamic>> get nativePhoneStateStream => _nativeStateController.stream;
 
   /// 전화 권한 요청 (CALL_PHONE 권한)
   static Future<bool> requestPhonePermission() async {
@@ -20,32 +32,54 @@ class PhoneService {
     return status.isGranted;
   }
 
-  /// 전화 상태 감지 시작
-  static Future<void> startPhoneStateMonitoring() async {
+  /// 네이티브 통화 상태 감지 시작 (TelephonyManager 사용)
+  static Future<void> startNativePhoneStateMonitoring() async {
     try {
-      // READ_PHONE_STATE 권한 확인
-      var status = await Permission.phone.status;
-      if (!status.isGranted) {
-        status = await Permission.phone.request();
-        if (!status.isGranted) {
-          debugPrint('전화 상태 읽기 권한이 거부되었습니다.');
-          return;
+      // 네이티브 통화 상태 콜백 등록
+      phoneStatePlatform.setMethodCallHandler((call) async {
+        // 기본 통화 상태 (IDLE, OFFHOOK, RINGING)
+        if (call.method == 'onCallStateChanged') {
+          final state = call.arguments['state'] as String;
+          final callDuration = call.arguments['callDuration'] as int?;
+          debugPrint('=== 기본 통화 상태: $state (통화시간: ${callDuration ?? 0}초) ===');
+
+          // 중복 상태 필터링 (IDLE은 통화시간 정보가 있으므로 중복 체크 안 함)
+          if (state != 'IDLE' && _lastNativeState == state) {
+            return;
+          }
+          _lastNativeState = state;
+
+          // 네이티브 상태를 Map으로 전달
+          _nativeStateController.add({
+            'state': state,
+            'callDuration': callDuration ?? 0,
+          });
         }
-      }
+        // PreciseCallState (DIALING, ALERTING, ACTIVE, DISCONNECTED)
+        else if (call.method == 'onPreciseCallStateChanged') {
+          final state = call.arguments['state'] as String;
+          debugPrint('=== ⭐ PreciseCallState: $state ⭐ ===');
 
-      // 전화 상태 감지 시작
-      _phoneStateSubscription = PhoneState.stream.listen((PhoneState state) {
-        debugPrint('=== 전화 상태 변경 ===');
-        debugPrint('상태: ${state.status}');
-        debugPrint('전화번호: ${state.number}');
-
-        _phoneStateController.add(state.status);
+          // PreciseCallState를 네이티브 스트림으로 전달
+          _nativeStateController.add({
+            'state': 'PRECISE_$state',
+            'callDuration': 0,
+          });
+        }
       });
 
-      debugPrint('전화 상태 모니터링 시작');
+      // 네이티브 모니터링 시작
+      await phoneStatePlatform.invokeMethod('startMonitoring');
+      debugPrint('네이티브 통화 상태 모니터링 시작');
     } catch (e) {
-      debugPrint('전화 상태 모니터링 오류: $e');
+      debugPrint('네이티브 통화 상태 모니터링 오류: $e');
     }
+  }
+
+  /// 전화 상태 감지 시작 (기존 phone_state 패키지 - 사용 안 함)
+  static Future<void> startPhoneStateMonitoring() async {
+    // 네이티브 TelephonyManager 사용으로 대체됨
+    await startNativePhoneStateMonitoring();
   }
 
   /// 전화 상태 감지 중지
@@ -125,6 +159,19 @@ class PhoneService {
       }
     } catch (e) {
       debugPrint('백그라운드 전화 걸기 오류: $e');
+    }
+  }
+
+  /// 현재 통화 종료
+  static Future<void> endCall() async {
+    try {
+      if (Platform.isAndroid) {
+        // MethodChannel을 통해 네이티브 통화 종료 호출
+        await platform.invokeMethod('endCall');
+        debugPrint('통화 종료 요청 완료');
+      }
+    } catch (e) {
+      debugPrint('통화 종료 오류: $e');
     }
   }
 

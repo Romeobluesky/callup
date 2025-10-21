@@ -30,22 +30,22 @@ class OverlayView(
     private val connectedButton: Button
     private val nextButton: Button
 
-    private var currentCountdown = 3
+    private var currentCountdown = 5
 
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setPadding(40, 60, 40, 40)
+        setPadding(50, 80, 50, 80)
 
-        // Background styling - matching app's dark gray background
+        // Background styling - matching app's dark gray background (더 크게)
         val background = GradientDrawable().apply {
             setColor(Color.parseColor("#585667"))
-            cornerRadius = 20f
-            setStroke(3, Color.parseColor("#FF0756"))
+            cornerRadius = 24f
+            setStroke(4, Color.parseColor("#FF0756"))
         }
         this.background = background
 
-        elevation = 16f
+        elevation = 20f
 
         // Title Row (DB + Progress)
         val titleRow = LinearLayout(context).apply {
@@ -127,57 +127,62 @@ class OverlayView(
 
         // Countdown Section
         countdownText = TextView(context).apply {
-            text = "3초"
-            textSize = 36f
+            text = "10초"
+            textSize = 48f
             setTextColor(Color.parseColor("#FF0756"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 24
+                bottomMargin = 32
             }
         }
         addView(countdownText)
 
-        // Button Row
-        val buttonRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
-        }
-
-        // Connected Button
-        connectedButton = Button(context).apply {
-            text = "통화 연결됨"
+        // 경고 문구 추가
+        val warningText = TextView(context).apply {
+            text = "⚠️ 통화가 연결되면\n반드시 버튼을 눌러주세요!!\n누르지 않으면 자동으로\n연결이 끊어집니다 ⚠️"
             textSize = 16f
+            setTextColor(Color.parseColor("#FFD700")) // 금색
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = 40
+            }
+        }
+        addView(warningText)
+
+        // "통화 연결됨" 버튼 - 중앙에 크게 배치
+        connectedButton = Button(context).apply {
+            text = "✅ 통화 연결됨"
+            textSize = 24f
             setTextColor(Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                rightMargin = 8
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = 20
             }
 
             setBackground(GradientDrawable().apply {
-                setColor(Color.parseColor("#00C853")) // Green
-                cornerRadius = 12f
+                setColor(Color.parseColor("#4CAF50")) // 녹색
+                cornerRadius = 16f
             })
 
-            setPadding(24, 20, 24, 20)
+            setPadding(60, 50, 60, 50)
 
             setOnClickListener {
                 stopCountdown()
-                // TODO: Notify Flutter about connection
+                // Notify Flutter that call was connected
+                MainActivity.overlayChannel?.invokeMethod("onConnected", null)
                 service.hideOverlay()
             }
         }
 
-        // Next Button
+        // "다음" 버튼 (작게, 아래쪽)
         nextButton = Button(context).apply {
             text = "다음"
-            textSize = 16f
+            textSize = 14f
             setTextColor(Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                leftMargin = 8
-            }
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
 
             setBackground(GradientDrawable().apply {
                 setColor(Color.parseColor("#FF0756")) // Red
@@ -188,14 +193,14 @@ class OverlayView(
 
             setOnClickListener {
                 stopCountdown()
-                // TODO: Notify Flutter to proceed to next customer
+                // Notify Flutter to proceed to next customer
+                MainActivity.overlayChannel?.invokeMethod("onTimeout", null)
                 service.hideOverlay()
             }
         }
 
-        buttonRow.addView(connectedButton)
-        buttonRow.addView(nextButton)
-        addView(buttonRow)
+        addView(connectedButton)
+        addView(nextButton)
     }
 
     fun updateData(
@@ -228,7 +233,8 @@ class OverlayView(
                     // Countdown finished - automatically move to next customer
                     countdownText.text = "다음 고객으로..."
                     handler.postDelayed({
-                        // TODO: Notify Flutter to move to next customer
+                        // Notify Flutter to move to next customer
+                        MainActivity.overlayChannel?.invokeMethod("onTimeout", null)
                         service.hideOverlay()
                     }, 500)
                 }

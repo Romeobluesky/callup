@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/signup_screen.dart';
+import 'services/overlay_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 오버레이 콜백 핸들러 설정
+  OverlayService.setupCallbackHandler();
+
   runApp(const MyApp());
 }
 

@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.callup.callup"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35  // 플러그인 호환성을 위해 API 35로 설정
     ndkVersion = "27.0.12077973"
 
     compileOptions {
