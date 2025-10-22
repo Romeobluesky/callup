@@ -163,9 +163,10 @@ class OverlayService : Service() {
             .setSmallIcon(android.R.drawable.ic_menu_call)
             .setContentIntent(pendingIntent)
             .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)  // LOW → HIGH (서비스 유지 강화)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)  // 즉시 표시
             .build()
     }
 
@@ -174,11 +175,13 @@ class OverlayService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "오토콜 통화 알림",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH  // LOW → HIGH (서비스 유지 강화)
             ).apply {
                 description = "통화 중 고객 정보 표시"
                 setSound(null, null)
                 enableVibration(false)
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
 
             val notificationManager = getSystemService(NotificationManager::class.java)
@@ -188,7 +191,33 @@ class OverlayService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        android.util.Log.d("OverlayService", "onTaskRemoved: 앱이 최근 앱 목록에서 제거됨")
+
+        // 서비스 재시작 (앱이 제거되어도 서비스 유지)
+        val restartServiceIntent = Intent(applicationContext, OverlayService::class.java)
+        val restartServicePendingIntent = PendingIntent.getService(
+            applicationContext,
+            1,
+            restartServiceIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+            } else {
+                PendingIntent.FLAG_ONE_SHOT
+            }
+        )
+
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+        alarmManager.set(
+            android.app.AlarmManager.ELAPSED_REALTIME,
+            android.os.SystemClock.elapsedRealtime() + 1000,
+            restartServicePendingIntent
+        )
+    }
+
     override fun onDestroy() {
+        android.util.Log.d("OverlayService", "onDestroy: 서비스 종료됨")
         hideOverlay()
         super.onDestroy()
     }

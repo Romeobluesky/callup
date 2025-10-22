@@ -155,11 +155,12 @@ class OverlayView(
 
         // 경고 문구 추가
         val warningText = TextView(context).apply {
-            text = "⚠️ 통화가 연결되면\n반드시 버튼을 눌러주세요!!\n누르지 않으면 자동으로\n연결이 끊어집니다 ⚠️"
+            text = "통화가 연결되면\n⚠️ 반드시 통화연결됨 버튼을 눌러주세요!!⚠️\n누르지 않으면 연결이 끊어집니다"
             textSize = textSizeSmall
             setTextColor(Color.parseColor("#FFD700")) // 금색
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
+            setLineSpacing(8f, 1.0f)  // 줄 간격 8dp 추가
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = largeMargin
             }

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(adb logcat:*)",
+      "Bash(\"C:\\Users\\hyesu\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -d)",
+      "Bash(Select-String -Pattern \"OverlayService|AutoCall|callup\")",
+      "Bash(Select-Object -Last 100)"
     ],
     "deny": [],
     "ask": []
