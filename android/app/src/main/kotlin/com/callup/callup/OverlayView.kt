@@ -28,6 +28,7 @@ class OverlayView(
     private val statusText: TextView
     private val countdownText: TextView
     private val connectedButton: Button
+    private val pauseButton: Button
     private val nextButton: Button
 
     private var currentCountdown = 5
@@ -35,7 +36,13 @@ class OverlayView(
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setPadding(50, 80, 50, 80)
+
+        // 반응형 패딩 (작게 조정)
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val horizontalPadding = (screenWidth * 0.03).toInt()  // 3%
+        val verticalPadding = (screenHeight * 0.02).toInt()  // 2%
+        setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
 
         // Background styling - matching app's dark gray background (더 크게)
         val background = GradientDrawable().apply {
@@ -47,29 +54,37 @@ class OverlayView(
 
         elevation = 20f
 
+        // 반응형 크기 계산 (화면 비율 기반)
+        val baseMargin = (screenHeight * 0.015).toInt()  // 1.5%
+        val smallMargin = (screenHeight * 0.008).toInt()  // 0.8%
+        val largeMargin = (screenHeight * 0.02).toInt()  // 2%
+        val textSizeSmall = 14f  // 고정 14sp
+        val textSizeMedium = 16f  // 고정 16sp
+        val textSizeLarge = 28f  // 고정 28sp
+
         // Title Row (DB + Progress)
         val titleRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
             gravity = Gravity.CENTER
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 24
+                bottomMargin = baseMargin
             }
         }
 
         titleText = TextView(context).apply {
             text = "DB"
-            textSize = 18f
+            textSize = textSizeMedium
             setTextColor(Color.parseColor("#F9F8EB"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
 
         progressText = TextView(context).apply {
             text = "0/0"
-            textSize = 18f
+            textSize = textSizeMedium
             setTextColor(Color.parseColor("#FFCDDD"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                leftMargin = 16
+                leftMargin = smallMargin
             }
         }
 
@@ -81,9 +96,9 @@ class OverlayView(
         val customerSection = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 24
+                bottomMargin = baseMargin
             }
-            setPadding(24, 24, 24, 24)
+            setPadding(baseMargin, baseMargin, baseMargin, baseMargin)
 
             setBackground(GradientDrawable().apply {
                 setColor(Color.parseColor("#80FFFFFF")) // Semi-transparent white
@@ -93,17 +108,17 @@ class OverlayView(
 
         customerNameText = TextView(context).apply {
             text = "고객명: -"
-            textSize = 16f
+            textSize = textSizeSmall
             setTextColor(Color.parseColor("#383743"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 12
+                bottomMargin = smallMargin
             }
         }
 
         customerPhoneText = TextView(context).apply {
             text = "전화번호: -"
-            textSize = 16f
+            textSize = textSizeSmall
             setTextColor(Color.parseColor("#383743"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
@@ -115,12 +130,12 @@ class OverlayView(
         // Status Section
         statusText = TextView(context).apply {
             text = "대기중"
-            textSize = 20f
+            textSize = textSizeMedium
             setTextColor(Color.parseColor("#FFCDDD"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 16
+                bottomMargin = smallMargin
             }
         }
         addView(statusText)
@@ -128,12 +143,12 @@ class OverlayView(
         // Countdown Section
         countdownText = TextView(context).apply {
             text = "10초"
-            textSize = 48f
+            textSize = textSizeLarge
             setTextColor(Color.parseColor("#FF0756"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 32
+                bottomMargin = largeMargin
             }
         }
         addView(countdownText)
@@ -141,24 +156,33 @@ class OverlayView(
         // 경고 문구 추가
         val warningText = TextView(context).apply {
             text = "⚠️ 통화가 연결되면\n반드시 버튼을 눌러주세요!!\n누르지 않으면 자동으로\n연결이 끊어집니다 ⚠️"
-            textSize = 16f
+            textSize = textSizeSmall
             setTextColor(Color.parseColor("#FFD700")) // 금색
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 40
+                bottomMargin = largeMargin
             }
         }
         addView(warningText)
 
-        // "통화 연결됨" 버튼 - 중앙에 크게 배치
+        // 반응형 버튼 크기 (작게 조정)
+        val buttonTextLarge = 18f  // 큰 버튼
+        val buttonTextMedium = 16f  // 중간 버튼
+        val buttonTextSmall = 14f  // 작은 버튼
+        val buttonPaddingLarge = (screenHeight * 0.018).toInt()  // 1.8%
+        val buttonPaddingMedium = (screenHeight * 0.015).toInt()  // 1.5%
+        val buttonPaddingSmall = (screenHeight * 0.012).toInt()  // 1.2%
+        val buttonSpacing = (screenHeight * 0.012).toInt()  // 1.2% 간격
+
+        // "통화 연결됨" 버튼 - 녹색 (가장 큼)
         connectedButton = Button(context).apply {
-            text = "✅ 통화 연결됨"
-            textSize = 24f
+            text = "통화 연결됨"
+            textSize = buttonTextLarge
             setTextColor(Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = 20
+                bottomMargin = buttonSpacing
             }
 
             setBackground(GradientDrawable().apply {
@@ -166,40 +190,63 @@ class OverlayView(
                 cornerRadius = 16f
             })
 
-            setPadding(60, 50, 60, 50)
+            setPadding(buttonPaddingLarge, buttonPaddingLarge, buttonPaddingLarge, buttonPaddingLarge)
 
             setOnClickListener {
                 stopCountdown()
-                // Notify Flutter that call was connected
                 MainActivity.overlayChannel?.invokeMethod("onConnected", null)
                 service.hideOverlay()
             }
         }
 
-        // "다음" 버튼 (작게, 아래쪽)
+        // "일시정지" 버튼 - 주황색 (중간)
+        pauseButton = Button(context).apply {
+            text = "일시정지"
+            textSize = buttonTextMedium
+            setTextColor(Color.WHITE)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = buttonSpacing
+            }
+
+            setBackground(GradientDrawable().apply {
+                setColor(Color.parseColor("#FF9800")) // 주황색
+                cornerRadius = 16f
+            })
+
+            setPadding(buttonPaddingMedium, buttonPaddingMedium, buttonPaddingMedium, buttonPaddingMedium)
+
+            setOnClickListener {
+                stopCountdown()
+                MainActivity.overlayChannel?.invokeMethod("onPause", null)
+                service.hideOverlay()
+            }
+        }
+
+        // "다음" 버튼 - 빨간색 (작음)
         nextButton = Button(context).apply {
             text = "다음"
-            textSize = 14f
+            textSize = buttonTextSmall
             setTextColor(Color.WHITE)
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
 
             setBackground(GradientDrawable().apply {
-                setColor(Color.parseColor("#FF0756")) // Red
-                cornerRadius = 12f
+                setColor(Color.parseColor("#FF0756")) // 빨간색
+                cornerRadius = 16f
             })
 
-            setPadding(24, 20, 24, 20)
+            setPadding(buttonPaddingSmall, buttonPaddingSmall, buttonPaddingSmall, buttonPaddingSmall)
 
             setOnClickListener {
                 stopCountdown()
-                // Notify Flutter to proceed to next customer
                 MainActivity.overlayChannel?.invokeMethod("onTimeout", null)
                 service.hideOverlay()
             }
         }
 
         addView(connectedButton)
+        addView(pauseButton)
         addView(nextButton)
     }
 

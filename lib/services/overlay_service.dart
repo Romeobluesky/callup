@@ -12,6 +12,10 @@ class OverlayService {
           // 오버레이에서 "통화 연결됨" 버튼 클릭
           AutoCallService().notifyConnected();
           break;
+        case 'onPause':
+          // 오버레이에서 "일시정지" 버튼 클릭
+          AutoCallService().notifyPause();
+          break;
         case 'onTimeout':
           // 오버레이에서 "다음" 버튼 클릭 또는 카운트다운 타임아웃
           AutoCallService().notifySkip();

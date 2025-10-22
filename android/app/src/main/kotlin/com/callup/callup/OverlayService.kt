@@ -103,7 +103,8 @@ class OverlayService : Service() {
             )
 
             params.gravity = Gravity.CENTER  // 중앙에 배치
-            params.width = (resources.displayMetrics.widthPixels * 0.95).toInt()  // 화면의 95% 너비
+            params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()  // 화면의 90% 너비
+            params.height = (resources.displayMetrics.heightPixels * 0.75).toInt()  // 화면의 75% 높이 (콤팩트)
 
             overlayView = OverlayView(this, this).apply {
                 updateData(customerName, customerPhone, progress, status, countdown)

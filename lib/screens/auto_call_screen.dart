@@ -142,8 +142,11 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             _callStatus = '대기중';
             _isAutoRunning = false;
             _isPaused = false;
-            _currentCustomer = null;
-            _progress = '0/0';
+            // idle 상태일 때 첫 번째 고객 정보 유지 (빈칸으로 만들지 않음)
+            if (_customers.isNotEmpty && _currentCustomer == null) {
+              _currentCustomer = _customers[0];
+              _progress = '1/${_customers.length}';
+            }
             break;
         }
       });

@@ -240,6 +240,41 @@ class AutoCallService {
     }
   }
 
+  /// 일시정지 (오버레이 "일시정지" 버튼)
+  Future<void> notifyPause() async {
+    debugPrint('일시정지 알림 받음 (일시정지 버튼)');
+    _countdownTimer?.cancel();
+
+    if (_callCompleter != null && !_callCompleter!.isCompleted) {
+      _callCompleter!.complete(CallResult.cancelled);
+    }
+
+    // 1. 전화 강제 종료
+    await PhoneService.endCall();
+    debugPrint('일시정지: 전화 강제 종료');
+
+    // 2. 다음 고객 정보 가져오기
+    currentIndex++;  // 현재 고객 건너뛰고 다음으로
+    final nextCustomer = getCurrentCustomer();
+
+    if (nextCustomer != null) {
+      // 3. 다음 고객 정보로 paused 상태 전송
+      _stateController.add(AutoCallState(
+        status: AutoCallStatus.paused,
+        customer: nextCustomer,
+        progress: '${currentIndex + 1}/${customerQueue.length}',
+      ));
+      debugPrint('일시정지: 다음 고객 정보 표시 (${currentIndex + 1}/${customerQueue.length})');
+    } else {
+      // 4. 더 이상 고객이 없으면 완전 중지
+      stop();
+      debugPrint('일시정지: 더 이상 고객 없음, 완전 중지');
+    }
+
+    // isRunning은 true로 유지 (재개 가능 상태)
+    isRunning = true;
+  }
+
   /// 통화 건너뛰기 (오버레이 "다음" 버튼 또는 타임아웃)
   void notifySkip() {
     debugPrint('통화 건너뛰기 알림 받음 (다음 버튼 또는 타임아웃)');
