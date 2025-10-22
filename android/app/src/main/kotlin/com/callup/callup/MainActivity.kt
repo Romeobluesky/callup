@@ -218,12 +218,23 @@ class MainActivity : FlutterActivity() {
                     when (state) {
                         TelephonyManager.CALL_STATE_IDLE -> {
                             android.util.Log.d("PhoneState", "CALL_STATE_IDLE (통화 없음)")
+
+                            // 1차 방어: OFFHOOK 시각으로 경과 시간 계산 (가장 정확)
+                            val callDuration = if (isCurrentlyOffhook && lastOffhookTime > 0) {
+                                val elapsedSeconds = ((System.currentTimeMillis() - lastOffhookTime) / 1000).toInt()
+                                android.util.Log.d("PhoneState", "경과 시간 계산: ${elapsedSeconds}초 (OFFHOOK 기준)")
+                                elapsedSeconds.toLong()
+                            } else {
+                                // 2차 방어: Call Log 조회 (Fallback)
+                                val logDuration = getLastOutgoingCallDuration()
+                                android.util.Log.d("PhoneState", "Call Log 조회: ${logDuration}초 (Fallback)")
+                                logDuration
+                            }
+
                             isCurrentlyOffhook = false
                             lastOffhookTime = 0
 
-                            // 통화 종료 시 Call Log를 확인하여 통화 시간 전달
-                            val callDuration = getLastOutgoingCallDuration()
-                            android.util.Log.d("PhoneState", "마지막 통화 시간: ${callDuration}초")
+                            android.util.Log.d("PhoneState", "최종 통화 시간: ${callDuration}초")
 
                             phoneStateMethodChannel?.invokeMethod("onCallStateChanged", mapOf(
                                 "state" to "IDLE",
@@ -242,6 +253,8 @@ class MainActivity : FlutterActivity() {
                                 // 처음 OFFHOOK 발생 (전화 걸기 시작)
                                 android.util.Log.d("PhoneState", "CALL_STATE_OFFHOOK (전화 걸기 시작)")
                                 isCurrentlyOffhook = true
+                                lastOffhookTime = System.currentTimeMillis()  // 통화 시작 시각 저장
+                                android.util.Log.d("PhoneState", "통화 시작 시각 저장: $lastOffhookTime")
 
                                 phoneStateMethodChannel?.invokeMethod("onCallStateChanged", mapOf(
                                     "state" to "OFFHOOK",

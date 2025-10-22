@@ -13,8 +13,8 @@ class OverlayService {
           AutoCallService().notifyConnected();
           break;
         case 'onTimeout':
-          // 오버레이에서 "다음" 버튼 클릭 또는 타임아웃
-          // 타임아웃 처리는 AutoCallService의 Timer에서 이미 처리됨
+          // 오버레이에서 "다음" 버튼 클릭 또는 카운트다운 타임아웃
+          AutoCallService().notifySkip();
           break;
       }
     });

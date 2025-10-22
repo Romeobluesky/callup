@@ -193,6 +193,9 @@ class _AutoCallScreenState extends State<AutoCallScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF585667),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5),
+        ),
         title: const Text(
           '완료',
           style: TextStyle(color: Color(0xFFF9F8EB)),

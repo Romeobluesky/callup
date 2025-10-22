@@ -60,16 +60,11 @@ class AutoCallService {
           if (_callCompleter != null && !_callCompleter!.isCompleted) {
             _countdownTimer?.cancel();
 
-            if (callDuration > 0) {
-              // 통화시간이 0초 이상 → 상대방이 받았음
-              debugPrint('⭐⭐⭐ 통화 연결됨 (통화시간: $callDuration초) ⭐⭐⭐');
-              _connectedCustomer = getCurrentCustomer();  // 통화 연결된 고객 저장
-              _callCompleter!.complete(CallResult.connected);
-            } else {
-              // 통화시간 0초 → 무응답
-              debugPrint('무응답 (통화시간: 0초) → 타임아웃 처리');
-              _callCompleter!.complete(CallResult.timeout);
-            }
+            // 15초 카운트다운 내 종료 = 자동응답 안내, 즉시 끊김, 무응답 등
+            // → 실제 통화로 보기 어려우므로 무조건 부재중 처리
+            debugPrint('15초 타임아웃 내 통화 종료 (통화시간: $callDuration초) → 부재중 처리');
+            debugPrint('사유: 자동응답 안내, 즉시 끊김, 무응답 등으로 판단');
+            _callCompleter!.complete(CallResult.timeout);
           } else {
             // 카운트다운이 이미 완료된 후 통화 종료
             if (callDuration > 0 && _connectedCustomer != null) {
@@ -152,7 +147,7 @@ class AutoCallService {
       customerPhone: customer['phone'] ?? '-',
       progress: progress,
       status: '응답대기',
-      countdown: 10,
+      countdown: 15,
     );
 
     PhoneService.makePhoneCallInBackground(customer['phone'] ?? '');
@@ -180,11 +175,11 @@ class AutoCallService {
       ));
       // 여기서 대기, resumeAfterResult()로 재개됨
     } else if (result == CallResult.timeout) {
-      debugPrint('10초 타임아웃 → 전화 강제 종료 후 부재중 저장');
+      debugPrint('15초 타임아웃 → 전화 강제 종료 후 부재중 저장');
 
       // 현재 통화 강제 종료
       await PhoneService.endCall();
-      await Future.delayed(const Duration(milliseconds: 500)); // 통화 종료 대기
+      await Future.delayed(const Duration(milliseconds: 800)); // Call Log 업데이트 대기 (안전 시간)
 
       // 부재중 자동 저장
       await _saveAutoResult(customer, '부재중');
@@ -198,12 +193,12 @@ class AutoCallService {
     }
   }
 
-  /// 10초 대기 + 통화 연결 감지
+  /// 15초 대기 + 통화 연결 감지
   Future<CallResult> _waitForConnection() async {
     _callCompleter = Completer<CallResult>();
-    int countdown = 10;
+    int countdown = 15;
 
-    debugPrint('10초 카운트다운 시작');
+    debugPrint('15초 카운트다운 시작');
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!isRunning) {
@@ -221,7 +216,7 @@ class AutoCallService {
 
       if (countdown <= 0) {
         timer.cancel();
-        debugPrint('10초 타임아웃 → 전화 강제 종료');
+        debugPrint('15초 타임아웃 → 전화 강제 종료');
 
         if (!_callCompleter!.isCompleted) {
           _callCompleter!.complete(CallResult.timeout);
@@ -242,6 +237,16 @@ class AutoCallService {
 
     if (_callCompleter != null && !_callCompleter!.isCompleted) {
       _callCompleter!.complete(CallResult.connected);
+    }
+  }
+
+  /// 통화 건너뛰기 (오버레이 "다음" 버튼 또는 타임아웃)
+  void notifySkip() {
+    debugPrint('통화 건너뛰기 알림 받음 (다음 버튼 또는 타임아웃)');
+    _countdownTimer?.cancel();
+
+    if (_callCompleter != null && !_callCompleter!.isCompleted) {
+      _callCompleter!.complete(CallResult.timeout);
     }
   }
 
