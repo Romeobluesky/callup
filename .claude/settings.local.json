@@ -5,7 +5,9 @@
       "Bash(adb logcat:*)",
       "Bash(\"C:\\Users\\hyesu\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" logcat -d)",
       "Bash(Select-String -Pattern \"OverlayService|AutoCall|callup\")",
-      "Bash(Select-Object -Last 100)"
+      "Bash(Select-Object -Last 100)",
+      "Bash(flutter pub:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

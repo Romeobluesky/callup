@@ -1033,6 +1033,313 @@ if (callDuration > 0 && _connectedCustomer != null) {
 
 ---
 
-**마지막 업데이트**: 2025-10-21
-**버전**: 1.0.0+2
+### 2025-10-22 - 일시정지 버튼 구현 및 오버레이 반응형 디자인
+
+#### 작업 목표
+오버레이 창에 일시정지 버튼 추가 및 반응형 디자인으로 모든 화면 크기에서 정상 표시
+
+#### 구현 내용
+
+**1. 일시정지 버튼 추가 (3개 버튼 레이아웃)**
+
+파일: `android/app/src/main/kotlin/com/callup/callup/OverlayView.kt`
+
+3개 버튼 구성:
+- **통화 연결됨** (녹색, 18sp): 통화 연결 → 결과 입력 페이지
+- **일시정지** (주황색, 16sp): 전화 종료 → 다음 고객 정보 표시 → 대기 상태
+- **다음** (빨간색, 14sp): 전화 종료 → 부재중 처리 → 자동 다음 고객
+
+버튼 간격: 화면 높이의 1.2% (반응형)
+
+**2. Flutter-Native 양방향 통신**
+
+파일: `lib/services/overlay_service.dart`
+```dart
+static void setupCallbackHandler() {
+  _channel.setMethodCallHandler((call) async {
+    switch (call.method) {
+      case 'onConnected':
+        AutoCallService().notifyConnected();
+        break;
+      case 'onPause':  // NEW
+        AutoCallService().notifyPause();
+        break;
+      case 'onTimeout':
+        AutoCallService().notifySkip();
+        break;
+    }
+  });
+}
+```
+
+**3. 일시정지 로직 구현**
+
+파일: `lib/services/auto_call_service.dart`
+```dart
+Future<void> notifyPause() async {
+  debugPrint('일시정지 알림 받음 (일시정지 버튼)');
+  _countdownTimer?.cancel();
+
+  if (_callCompleter != null && !_callCompleter!.isCompleted) {
+    _callCompleter!.complete(CallResult.cancelled);
+  }
+
+  // 1. 전화 강제 종료
+  await PhoneService.endCall();
+
+  // 2. 다음 고객으로 인덱스 이동
+  currentIndex++;
+  final nextCustomer = getCurrentCustomer();
+
+  // 3. 다음 고객 정보로 paused 상태 전송
+  _stateController.add(AutoCallState(
+    status: AutoCallStatus.paused,
+    customer: nextCustomer,
+    progress: '${currentIndex + 1}/${customerQueue.length}',
+  ));
+
+  // 4. isRunning = true 유지 (재개 가능)
+  isRunning = true;
+}
+```
+
+**4. 오버레이 반응형 디자인**
+
+파일: `android/app/src/main/kotlin/com/callup/callup/OverlayView.kt`
+
+모든 크기를 화면 비율 기반으로 변경:
+```kotlin
+// 화면 크기 가져오기
+val screenWidth = resources.displayMetrics.widthPixels
+val screenHeight = resources.displayMetrics.heightPixels
+
+// 반응형 패딩 (3% / 2%)
+val horizontalPadding = (screenWidth * 0.03).toInt()
+val verticalPadding = (screenHeight * 0.02).toInt()
+
+// 반응형 마진 (0.8% / 1.5% / 2%)
+val baseMargin = (screenHeight * 0.015).toInt()
+val smallMargin = (screenHeight * 0.008).toInt()
+val largeMargin = (screenHeight * 0.02).toInt()
+
+// 고정 텍스트 크기 (반응형에서 고정으로 변경)
+val textSizeSmall = 14f
+val textSizeMedium = 16f
+val textSizeLarge = 28f
+
+// 반응형 버튼 크기
+val buttonTextLarge = 18f
+val buttonTextMedium = 16f
+val buttonTextSmall = 14f
+val buttonPaddingLarge = (screenHeight * 0.018).toInt()
+val buttonPaddingMedium = (screenHeight * 0.015).toInt()
+val buttonPaddingSmall = (screenHeight * 0.012).toInt()
+val buttonSpacing = (screenHeight * 0.012).toInt()
+```
+
+파일: `android/app/src/main/kotlin/com/callup/callup/OverlayService.kt`
+```kotlin
+params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()  // 90% 너비
+params.height = (resources.displayMetrics.heightPixels * 0.75).toInt()  // 75% 높이
+```
+
+**5. 안내 문구 줄 간격 조정**
+
+파일: `android/app/src/main/kotlin/com/callup/callup/OverlayView.kt`
+```kotlin
+val warningText = TextView(context).apply {
+    text = "통화가 연결되면\n⚠️ 반드시 통화연결됨 버튼을 눌러주세요!!⚠️\n누르지 않으면 연결이 끊어집니다"
+    setLineSpacing(8f, 1.0f)  // 줄 간격 8dp 추가
+    ...
+}
+```
+
+**6. 서비스 안정성 강화 (앱 종료 방지)**
+
+파일: `android/app/src/main/AndroidManifest.xml`
+```xml
+<uses-permission android:name="android.permission.WAKE_LOCK"/>
+<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+```
+
+파일: `android/app/src/main/kotlin/com/callup/callup/OverlayService.kt`
+
+알림 우선순위 상향:
+```kotlin
+.setPriority(NotificationCompat.PRIORITY_HIGH)  // LOW → HIGH
+.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+
+// 알림 채널
+NotificationManager.IMPORTANCE_HIGH  // LOW → HIGH
+```
+
+서비스 재시작 메커니즘:
+```kotlin
+override fun onTaskRemoved(rootIntent: Intent?) {
+    super.onTaskRemoved(rootIntent)
+
+    // 앱이 최근 앱 목록에서 제거되어도 1초 후 서비스 재시작
+    val restartServiceIntent = Intent(applicationContext, OverlayService::class.java)
+    val restartServicePendingIntent = PendingIntent.getService(...)
+
+    val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+    alarmManager.set(
+        android.app.AlarmManager.ELAPSED_REALTIME,
+        android.os.SystemClock.elapsedRealtime() + 1000,
+        restartServicePendingIntent
+    )
+}
+```
+
+#### 동작 흐름 (일시정지 버튼)
+
+**4번 고객 통화 중 일시정지 클릭 시**:
+1. 오버레이 "일시정지" 버튼 클릭
+2. `notifyPause()` 호출 → 전화 강제 종료
+3. `currentIndex++` → 5번 고객으로 이동
+4. `AutoCallStatus.paused` 상태로 5번 고객 정보 전송
+5. AutoCallScreen: "대기중" 상태 + 5번 고객 정보 표시 + START 버튼 활성화
+6. START 버튼 클릭 → 5번 고객에게 전화 시작
+
+#### 개선 효과
+
+**반응형 디자인**:
+- 작은 화면 (1280x720): 모든 요소 적절히 축소
+- 큰 화면 (2340x1080): 모든 요소 적절히 확대
+- 특대 화면 (3840x2160): 버튼 3개 모두 충분한 공간 확보
+
+**서비스 안정성**:
+- 알림 우선순위 상향 → 시스템이 서비스를 덜 종료
+- FOREGROUND_SERVICE_IMMEDIATE → 서비스가 즉시 포그라운드로 전환
+- WAKE_LOCK → CPU 슬립 모드 방지
+- 배터리 최적화 제외 → 시스템이 배터리 절약을 위해 종료하지 않음
+- onTaskRemoved() → 앱이 최근 앱 목록에서 제거되어도 1초 후 자동 재시작
+
+---
+
+### 2025-10-22 - MySQL 데이터베이스 스키마 설계
+
+#### 작업 목표
+CSV 파일 구조를 기반으로 MySQL 데이터베이스 스키마 설계 및 SQL 문서 작성
+
+#### 생성된 파일
+
+**DATABASE_SCHEMA.md**: MySQL 데이터베이스 완전한 스키마 설계
+
+#### 데이터베이스 구조 (5개 테이블)
+
+**1. users (상담원 정보)**
+- user_id (PK), user_login_id, user_name, user_password (SHA2 해시)
+- user_phone, user_status_message
+- is_active, created_at, updated_at
+
+**2. db_lists (DB 리스트)**
+- db_id (PK), db_title, db_date
+- total_count, unused_count
+- file_name, is_active (ON/OFF)
+- upload_date, created_at, updated_at
+
+**3. customers (고객 정보)**
+
+CSV 기본 정보 (0-5번 컬럼):
+- event_name, customer_phone, customer_name
+- customer_info1, customer_info2, customer_info3 (관리자 자유 입력)
+
+CSV 통화 관련 정보 (7-16번 컬럼):
+- data_status ENUM('미사용', '사용완료') - DB 사용 여부
+- call_result VARCHAR(100) - 통화 결과
+- consultation_result TEXT - 상담 결과
+- memo TEXT
+- call_datetime DATETIME
+- call_start_time TIME - 통화 시작 시간
+- call_end_time TIME - 통화 종료 시간
+- call_duration VARCHAR(20)
+- reservation_date DATE - 통화 예약일
+- reservation_time TIME - 통화 예약 시간
+
+CSV 메타 정보 (17-18번 컬럼):
+- upload_date DATE
+- last_modified_date DATETIME
+
+**4. call_logs (통화 로그)**
+- log_id (PK), user_id (FK), customer_id (FK), db_id (FK)
+- call_datetime, call_start_time, call_end_time, call_duration
+- call_result, consultation_result, memo
+- has_audio, audio_file_path
+
+**5. statistics (통계 정보)**
+- stat_id (PK), user_id (FK), stat_date
+- total_call_time, total_call_count
+- success_count, failed_count, callback_count, no_answer_count
+- assigned_db_count, unused_db_count
+
+#### CSV 컬럼 매핑 (18개)
+
+| 인덱스 | 컬럼명 | MySQL 필드 |
+|--------|--------|-----------|
+| 0 | 이벤트명 | event_name |
+| 1 | 전화번호 | customer_phone |
+| 2 | 고객명 | customer_name |
+| 3 | 고객정보1 | customer_info1 |
+| 4 | 고객정보2 | customer_info2 |
+| 5 | 고객정보3 | customer_info3 |
+| 7 | 상태 | data_status |
+| 8 | 통화결과 | call_result |
+| 9 | 상담결과 | consultation_result |
+| 10 | 메모 | memo |
+| 11 | 통화일시 | call_datetime |
+| 12 | 통화시작시간 | call_start_time |
+| 13 | 통화종료시간 | call_end_time |
+| 14 | 통화시간 | call_duration |
+| 15 | 통화예약일 | reservation_date |
+| 16 | 통화예약시간 | reservation_time |
+| 17 | 업로드날짜 | upload_date |
+| 18 | 최종수정일 | last_modified_date |
+
+#### 주요 기능
+
+**트리거 (자동 업데이트)**:
+1. customers 테이블 변경 시 db_lists의 unused_count 자동 갱신
+2. call_logs 삽입 시 statistics 자동 갱신
+
+**주요 쿼리 8개**:
+1. 특정 DB의 미사용 고객 목록 조회
+2. 상담원별 오늘 통계 조회
+3. DB 리스트 조회 (미사용 개수 포함)
+4. 고객 검색 (이름, 전화번호, 이벤트명)
+5. 통화 로그 기록
+6. 고객 통화 정보 업데이트
+7. 통화 예약 설정
+8. 예약된 통화 목록 조회 (오늘 기준)
+
+**인덱스 최적화**:
+- users: user_login_id, user_name
+- db_lists: db_date, is_active
+- customers: db_id, phone, data_status, reservation_date
+- call_logs: user_id, customer_id, call_datetime
+- statistics: user_id, stat_date
+
+#### 변경 사항 (v2.0.0)
+
+- 고객정보1-3으로 축소 (관리자 자유 입력)
+- ~~고객정보4 삭제~~
+- ~~고객유형 삭제~~
+- 통화상태 → 데이터상태로 변경 (미사용/사용완료)
+- 통화시작시간, 통화종료시간 추가
+- 통화예약일, 통화예약시간 추가
+- 통화결과, 상담결과 분리
+- CSV 컬럼 18개로 확정
+
+#### 빌드 정보
+
+**APK**:
+- 위치: `build/app/outputs/flutter-apk/app-release.apk`
+- 크기: 22.3MB
+- 상태: 일시정지 버튼 구현 + 반응형 오버레이 + 서비스 안정성 강화 완료
+
+---
+
+**마지막 업데이트**: 2025-10-22
+**버전**: 1.0.0+3
 **플랫폼**: Android
