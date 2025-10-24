@@ -1340,6 +1340,294 @@ CSV 메타 정보 (17-18번 컬럼):
 
 ---
 
-**마지막 업데이트**: 2025-10-22
-**버전**: 1.0.0+3
+### 2025-10-24 - 업체 기반 인증 시스템 전환 및 로그인 UX 개선
+
+#### 작업 목표
+개인 계정 → 업체 기반 계정 시스템으로 전환하고 로그인 화면 전환 UX 개선
+
+#### 구현 내용
+
+**1. 업체 기반 인증 시스템으로 변경**
+
+변경 전 (개인 계정):
+- 개별 사용자 회원가입
+- 사용자 ID/비밀번호 기반 인증
+- 독립적인 사용자 관리
+
+변경 후 (업체 기반):
+- 업체 단위로 계정 관리
+- 업체 ID + 비밀번호 + 상담원 이름으로 로그인
+- 한 업체에 여러 상담원 소속
+- JWT 토큰에 업체ID, 사용자ID, 상담원명, 역할 정보 포함
+
+**2. API 연동 완료**
+
+새로 추가된 파일:
+- `lib/services/api/api_client.dart` - HTTP 클라이언트 (토큰 관리, 에러 처리)
+- `lib/services/api/auth_api_service.dart` - 로그인 API
+- `lib/services/api/dashboard_api_service.dart` - 대시보드 API
+- `lib/services/token_storage.dart` - JWT 토큰 저장/관리 (SharedPreferences)
+
+API 엔드포인트:
+- `POST /api/auth/login` - 로그인
+- `GET /api/dashboard` - 대시보드 데이터 조회
+- `POST /api/dashboard/toggle-status` - 상담원 상태 토글
+
+**3. 로그인 화면 수정**
+
+파일: `lib/screens/signup_screen.dart`
+
+입력 필드 변경:
+- 기존: ID, 이름, 비밀번호
+- 변경: 업체 ID, 비밀번호, 상담원 이름
+
+```dart
+_companyIdController    // 업체 로그인 ID
+_passwordController     // 업체 비밀번호
+_agentNameController    // 상담원 이름
+```
+
+**4. 대시보드 API 연동**
+
+파일: `lib/screens/dashboard_screen.dart`
+
+API 응답 데이터 구조:
+```dart
+{
+  "user": {
+    "userId": 2,
+    "userName": "김상담",
+    "phone": "010-2345-6789",
+    "statusMessage": "업무 중",
+    "isActive": 1,
+    "lastActiveTime": "2025-10-24T13:19:13.000Z"
+  },
+  "todayStats": {
+    "callCount": 25,
+    "callDuration": "01:23:45",
+    "connectedCount": 15,
+    "failedCount": 8,
+    "callbackCount": 2
+  },
+  "dbLists": [
+    {
+      "dbId": 1,
+      "title": "이벤트01_251014",
+      "date": "2025-10-14",
+      "totalCount": 500,
+      "unusedCount": 250,
+      "isActive": 1
+    }
+  ]
+}
+```
+
+**5. 출근 시스템 구현**
+
+파일: `lib/screens/dashboard_screen.dart`
+
+출근 시스템 로직 (SharedPreferences):
+- `active_login_time`: 출근 시간 기록
+- `active_date`: 출근 날짜 (YYYY-MM-DD)
+- `is_active_today`: 오늘 출근 여부 (true/false)
+
+동작 방식:
+1. **첫 로그인**: 토글 OFF 상태, 로그인시간 표시 없음
+2. **토글 ON**: 현재 시간 저장 + "출근" 표시
+3. **페이지 이동 후 복귀**: 저장된 출근 시간 유지
+4. **앱 재시작**: 같은 날짜면 출근 상태 유지
+5. **다음날 로그인**: 자동으로 OFF 상태로 리셋
+
+표시 텍스트:
+- 토글 OFF: "미출근"
+- 토글 ON (시간 없음): "출근"
+- 토글 ON (시간 있음): "2025-10-24 09:30:15"
+
+**6. 토글 버튼 스타일 통일**
+
+대시보드와 오토콜 화면의 토글 버튼 스타일 일치:
+- ON 상태: #FF0756 (핑크)
+- OFF 상태: #383743 (다크 그레이)
+- 높이: 34px
+- 원형 버튼: 29px (흰색)
+- 텍스트: 11sp, bold
+
+**7. 로그인 화면 전환 UX 개선**
+
+문제 상황:
+- 키보드 올라온 상태에서 로그인 → 오버플로우 발생
+- 로딩 다이얼로그 닫힌 후 빈 화면 표시
+- 대시보드로 갔다가 다시 로그인 화면으로 돌아옴
+- 하단 네비게이션 바 깜빡임
+- 키보드가 다시 올라왔다 내려감
+
+해결 방법:
+
+**문제 1: 키보드 오버플로우**
+- Positioned 위젯의 고정 좌표가 키보드로 인한 화면 축소 시 화면 밖으로 벗어남
+- 해결: Stack을 ClipRect로 감싸서 화면 밖 요소 잘라내기
+
+```dart
+body: ClipRect(
+  child: Stack(
+    children: [
+      // Positioned 배경 원들...
+      Center(
+        child: SingleChildScrollView(...)
+      )
+    ]
+  )
+)
+```
+
+**문제 2: 로그인 후 대시보드 → 로그인으로 돌아옴**
+- 원인: `Navigator.pushReplacement` 후 `Navigator.pop` 호출 → 대시보드가 닫힘
+- 해결: pop을 먼저 호출하고 그 다음 pushReplacement
+
+```dart
+// Before (잘못된 순서)
+Navigator.pushReplacement(...);  // 대시보드로 이동
+await Future.delayed(100ms);
+Navigator.pop(context);  // 이미 대시보드인데 pop → 로그인으로 돌아감!
+
+// After (올바른 순서)
+Navigator.pop(context);  // 로딩 다이얼로그 닫기
+await Future.delayed(100ms);
+Navigator.pushReplacement(...);  // 대시보드로 이동
+```
+
+**문제 3: 하단 네비게이션 바 깜빡임**
+- 원인: 대시보드 로딩 중(`_isLoading = true`)에도 네비게이션 바 렌더링
+- 해결: 로딩 중에는 네비게이션 바 숨기기
+
+```dart
+// Bottom Navigation Bar (로딩 중이 아닐 때만 표시)
+if (!_isLoading)
+  Positioned(
+    left: 0,
+    right: 0,
+    bottom: 0,
+    child: CustomBottomNavigationBar(...),
+  ),
+```
+
+**문제 4: 키보드 재출현**
+- 원인: 로딩 다이얼로그 닫은 후 TextField가 포커스 유지
+- 해결: 이중 포커스 해제 + 충분한 딜레이
+
+```dart
+// 1. 로딩 다이얼로그 닫기
+Navigator.pop(context);
+
+// 2. 키보드를 확실하게 닫기 (이중 방어)
+FocusScope.of(context).unfocus();
+FocusManager.instance.primaryFocus?.unfocus();
+
+// 3. 150ms 대기 (키보드 완전히 닫힐 때까지)
+await Future.delayed(const Duration(milliseconds: 150));
+
+// 4. 대시보드로 전환
+Navigator.pushReplacement(...);
+```
+
+**8. JWT 토큰 만료 처리**
+
+파일: `lib/screens/auto_call_screen.dart`, `lib/screens/call_result_screen.dart`
+
+TODO 주석 구현:
+```dart
+if (result['requireLogin'] == true) {
+  // JWT 토큰 만료 → 로그인 화면으로
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('로그인이 만료되었습니다.')),
+  );
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const SignUpScreen()),
+  );
+}
+```
+
+**9. 디버그 로그 정리**
+
+모든 `print()` 문을 `debugPrint()`로 변경:
+- `lib/screens/signup_screen.dart` (5개)
+- `lib/services/api/api_client.dart` (7개)
+- `lib/services/api/auth_api_service.dart` (3개)
+
+#### 로그인 전환 타임라인 (최종)
+
+```
+0ms   ─ 로그인 버튼 클릭
+0ms   ─ FocusScope.unfocus() (키보드 닫기)
+150ms ─ 로딩 다이얼로그 표시
+      ─ API 호출
+      ─ ... (API 처리 시간)
+      ─ API 완료
+0ms   ─ 로딩 다이얼로그 닫기
+0ms   ─ 이중 포커스 해제 (키보드 확실히 닫기)
+150ms ─ 키보드 완전히 사라짐
+150ms ─ 대시보드 페이드 인 시작 (300ms)
+450ms ─ 대시보드 완전히 표시
+```
+
+#### 기술적 세부사항
+
+**API 클라이언트 구조**:
+- 싱글톤 패턴으로 전역 HTTP 클라이언트 관리
+- JWT 토큰 자동 헤더 추가
+- 401 에러 자동 감지 및 재로그인 유도
+- 타임아웃 설정 (30초)
+- 에러 로깅 및 예외 처리
+
+**토큰 저장**:
+- SharedPreferences 사용
+- 앱 재시작 후에도 토큰 유지
+- 토큰 만료 시 자동 삭제
+
+**상태 관리**:
+- SharedPreferences로 출근 상태 영구 저장
+- 날짜 변경 자동 감지 및 초기화
+- 토글 상태와 API 동기화
+
+#### 발견된 문제 및 해결
+
+**문제 1: API 필드명 불일치**
+- 증상: 전화번호 "-" 표시 (데이터는 있음)
+- 원인: 코드에서 `userPhone` 사용, API는 `phone` 반환
+- 해결: 필드명 수정 (`userPhone` → `phone`, `userStatusMessage` → `statusMessage`)
+
+**문제 2: 로그인 화면 왼쪽으로 몰림**
+- 증상: 입력 필드들이 화면 왼쪽으로 밀림
+- 원인: ConstrainedBox와 IntrinsicHeight 사용으로 Center 무효화
+- 해결: `Center` 위젯으로 감싸기
+
+**문제 3: Navigator.pop 순서 오류**
+- 증상: 대시보드 진입 후 즉시 로그인 화면으로 돌아옴
+- 원인: pushReplacement 후 pop 호출 → 대시보드가 닫힘
+- 해결: pop을 먼저 호출한 후 pushReplacement
+
+#### 개선 효과
+
+✅ 업체 기반 계정 시스템으로 전환 완료
+✅ API 연동 완료 (로그인, 대시보드, 토글)
+✅ 출근 시스템 구현 (날짜 자동 리셋)
+✅ 키보드 오버플로우 완전 해결
+✅ 로그인 화면 전환 부드럽고 자연스럽게 개선
+✅ 하단 네비게이션 깜빡임 해결
+✅ JWT 토큰 만료 처리 구현
+✅ 디버그 로그 정리 (debugPrint 사용)
+
+#### 빌드 정보
+
+**APK**:
+- 위치: `build/app/outputs/flutter-apk/app-release.apk`
+- 크기: 24.5MB
+- 상태: 업체 기반 인증 시스템 + 로그인 UX 개선 완료
+
+---
+
+**마지막 업데이트**: 2025-10-24
+**버전**: 1.0.0+4
 **플랫폼**: Android

@@ -1,46 +1,22 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
-import '../../utils/token_manager.dart';
+import 'api_client.dart';
 
-/// 대시보드 API 서비스
-/// 대시보드 데이터 조회, 사용자 상태 업데이트
+/// 대시보드 API 서비스 - v3.0.0
+/// 대시보드 데이터 조회, 상담원 상태 토글
 
 class DashboardApiService {
+  static final ApiClient _client = ApiClient();
+
   /// 대시보드 데이터 조회
   /// GET /api/dashboard
   static Future<Map<String, dynamic>> getDashboard() async {
     try {
-      final token = await TokenManager.getToken();
-      if (token == null) {
-        return {
-          'success': false,
-          'message': '로그인이 필요합니다.',
-        };
-      }
+      final data = await _client.get(ApiConfig.dashboard);
 
-      final url = Uri.parse(ApiConfig.getUrl(ApiConfig.dashboard));
-      final response = await http
-          .get(
-            url,
-            headers: ApiConfig.authHeaders(token),
-          )
-          .timeout(ApiConfig.connectionTimeout);
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (data['success'] == true) {
         return {
           'success': true,
           'data': data['data'],
-        };
-      } else if (response.statusCode == 401) {
-        // 토큰 만료
-        await TokenManager.clearAll();
-        return {
-          'success': false,
-          'message': '로그인이 만료되었습니다. 다시 로그인해주세요.',
-          'requireLogin': true,
         };
       } else {
         return {
@@ -48,6 +24,13 @@ class DashboardApiService {
           'message': data['message'] ?? '데이터 조회에 실패했습니다.',
         };
       }
+    } on ApiException catch (e) {
+      return {
+        'success': false,
+        'message': e.message,
+        'errorCode': e.errorCode,
+        'requireLogin': e.isUnauthorized,
+      };
     } catch (e) {
       return {
         'success': false,
@@ -56,46 +39,22 @@ class DashboardApiService {
     }
   }
 
-  /// 사용자 상태 업데이트
-  /// PATCH /api/users/status
-  static Future<Map<String, dynamic>> updateUserStatus({
-    required bool isActive,
-    required String statusMessage,
+  /// 상담원 상태 토글
+  /// PUT /api/dashboard/status
+  static Future<Map<String, dynamic>> toggleStatus({
+    required bool isOn,
   }) async {
     try {
-      final token = await TokenManager.getToken();
-      if (token == null) {
-        return {
-          'success': false,
-          'message': '로그인이 필요합니다.',
-        };
-      }
+      final data = await _client.put(
+        ApiConfig.dashboardStatus,
+        {'isOn': isOn},
+      );
 
-      final url = Uri.parse(ApiConfig.getUrl(ApiConfig.userStatus));
-      final response = await http
-          .patch(
-            url,
-            headers: ApiConfig.authHeaders(token),
-            body: jsonEncode({
-              'isActive': isActive,
-              'statusMessage': statusMessage,
-            }),
-          )
-          .timeout(ApiConfig.connectionTimeout);
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (data['success'] == true) {
         return {
           'success': true,
           'message': data['message'],
-        };
-      } else if (response.statusCode == 401) {
-        await TokenManager.clearAll();
-        return {
-          'success': false,
-          'message': '로그인이 만료되었습니다.',
-          'requireLogin': true,
+          'isOn': data['data']['isOn'],
         };
       } else {
         return {
@@ -103,6 +62,13 @@ class DashboardApiService {
           'message': data['message'] ?? '상태 업데이트에 실패했습니다.',
         };
       }
+    } on ApiException catch (e) {
+      return {
+        'success': false,
+        'message': e.message,
+        'errorCode': e.errorCode,
+        'requireLogin': e.isUnauthorized,
+      };
     } catch (e) {
       return {
         'success': false,

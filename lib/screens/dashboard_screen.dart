@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/db_manager.dart';
+import '../services/api/dashboard_api_service.dart';
 import 'customer_search_screen.dart';
 import 'db_list_screen.dart';
 import 'auto_call_screen.dart';
 import 'stats_screen.dart';
+import 'signup_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -37,51 +40,152 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadDashboardData() async {
-    // API 호출 없이 더미 데이터로 초기화
-    setState(() {
-      _userName = '테스트 상담원';
-      _userPhone = '010-1234-5678';
-      _statusMessage = '업무 중';
-      _lastActiveTime = DateTime.now().toString().substring(0, 19);
-      _isOn = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-      _todayCallCount = 150;
-      _todayCallDuration = '02:30:45';
+      // 저장된 날짜와 현재 날짜 비교
+      final savedDate = prefs.getString('active_date');
+      final today = DateTime.now().toString().substring(0, 10); // YYYY-MM-DD
 
-      _connectedCount = 120;
-      _failedCount = 25;
-      _callbackCount = 5;
+      // 날짜가 바뀌면 초기화 (다음날 출근 시)
+      if (savedDate != today) {
+        await prefs.remove('active_login_time');
+        await prefs.remove('active_date');
+        await prefs.remove('is_active_today');
+      }
 
-      _dbLists = [
-        {
-          'date': '2025-10-14',
-          'title': '이벤트01_251014',
-          'total': 500,
-          'unused': 250,
-        },
-        {
-          'date': '2025-10-13',
-          'title': '이벤트02_251013',
-          'total': 300,
-          'unused': 120,
-        },
-        {
-          'date': '2025-10-12',
-          'title': '이벤트03_251012',
-          'total': 400,
-          'unused': 180,
-        },
-      ];
+      final savedLoginTime = prefs.getString('active_login_time');
+      final isActiveToday = prefs.getBool('is_active_today') ?? false;
 
-      _isLoading = false;
-    });
+      // API 호출
+      final result = await DashboardApiService.getDashboard();
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        final data = result['data'];
+
+        setState(() {
+          // 사용자 정보
+          _userName = data['user']['userName'] ?? '상담원';
+          _userPhone = data['user']['phone'] ?? '-';
+          _statusMessage = data['user']['statusMessage'] ?? '업무 중';
+
+          // 출근 시간 표시 (출근 전에는 '-')
+          _lastActiveTime = savedLoginTime ?? '-';
+
+          // 토글 상태: 오늘 ON한 적이 있으면 ON 유지, 없으면 OFF
+          _isOn = isActiveToday;
+
+          // 오늘 통계
+          _todayCallCount = data['todayStats']?['callCount'] ?? 0;
+          _todayCallDuration = data['todayStats']?['callDuration'] ?? '00:00:00';
+
+          // 통화 결과 통계
+          _connectedCount = data['callResults']?['connected'] ?? 0;
+          _failedCount = data['callResults']?['failed'] ?? 0;
+          _callbackCount = data['callResults']?['callback'] ?? 0;
+
+          // DB 리스트 (최대 3개)
+          _dbLists = (data['dbLists'] as List?)?.take(3).toList() ?? [];
+
+          _isLoading = false;
+        });
+      } else if (result['requireLogin'] == true) {
+        // 로그인 만료 → 로그인 화면으로 이동
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const SignUpScreen()),
+          );
+        }
+      } else {
+        // 에러 처리
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? '데이터 로딩 실패'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('네트워크 오류: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _toggleUserStatus() {
-    // API 호출 없이 토글만 수행
+  Future<void> _toggleUserStatus() async {
+    // 낙관적 업데이트 (UI 먼저 변경)
+    final previousState = _isOn;
     setState(() {
       _isOn = !_isOn;
     });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateTime.now().toString().substring(0, 10); // YYYY-MM-DD
+
+      // ON으로 변경: 출근 시간 기록
+      if (_isOn) {
+        final currentTime = DateTime.now().toString().substring(0, 19);
+        await prefs.setString('active_login_time', currentTime);
+        await prefs.setString('active_date', today);
+        await prefs.setBool('is_active_today', true);
+        setState(() {
+          _lastActiveTime = currentTime;
+        });
+      } else {
+        // OFF로 변경: 출근 상태만 해제 (시간은 유지)
+        await prefs.setBool('is_active_today', false);
+      }
+
+      // API 호출
+      final result = await DashboardApiService.toggleStatus(isOn: _isOn);
+
+      if (result['success'] != true) {
+        // 실패 시 원래 상태로 복구
+        setState(() {
+          _isOn = previousState;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? '상태 업데이트 실패'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // 에러 시 원래 상태로 복구
+      setState(() {
+        _isOn = previousState;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('네트워크 오류: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -136,12 +240,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-          // Bottom Navigation Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CustomBottomNavigationBar(
+          // Bottom Navigation Bar (로딩 중이 아닐 때만 표시)
+          if (!_isLoading)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: CustomBottomNavigationBar(
               selectedIndex: _selectedIndex,
               onItemTapped: (index) {
                 if (index == 1) {
@@ -314,7 +419,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Date
+          // Login Time
           Row(
             children: [
               Image.asset(
@@ -324,10 +429,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: const Color(0xFF383743),
               ),
               const SizedBox(width: 10),
+              const Text(
+                '로그인시간',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFF9F8EB),
+                  letterSpacing: -0.15,
+                ),
+              ),
+              const SizedBox(width: 10),
               Text(
-                _lastActiveTime.isNotEmpty
-                    ? _lastActiveTime
-                    : DateTime.now().toString().substring(0, 19),
+                _isOn
+                    ? (_lastActiveTime.isNotEmpty && _lastActiveTime != '-'
+                        ? _lastActiveTime
+                        : '출근')
+                    : '미출근',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -406,10 +523,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: _toggleUserStatus,
                 child: Container(
                   width: 70,
-                  height: 32,
-                  padding: const EdgeInsets.all(2),
+                  height: 34,
+                  padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: _isOn
+                        ? const Color(0xFFFF0756)
+                        : const Color(0xFF383743),
                     borderRadius: BorderRadius.circular(360),
                   ),
                   child: Stack(
@@ -420,12 +539,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : Alignment.centerLeft,
                         duration: const Duration(milliseconds: 200),
                         child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: _isOn
-                                ? const Color(0xFFFFCDDD)
-                                : Colors.grey,
+                          width: 29,
+                          height: 29,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -435,13 +552,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ? Alignment.centerLeft
                             : Alignment.centerRight,
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
                             _isOn ? 'on' : 'off',
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 11,
                               color: Color(0xFFFFCDDD),
-                              fontWeight: FontWeight.w400,
+                              fontWeight: FontWeight.bold,
                               letterSpacing: -0.15,
                             ),
                           ),

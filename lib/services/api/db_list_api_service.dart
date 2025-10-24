@@ -1,55 +1,27 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
-import '../../utils/token_manager.dart';
+import 'api_client.dart';
 
-/// DB 리스트 API 서비스
-/// DB 리스트 조회, 특정 DB의 고객 목록 조회
+/// DB 리스트 API 서비스 - v3.0.0
+/// DB 리스트 조회, DB 활성화/비활성화
 
 class DbListApiService {
-  /// DB 리스트 전체 조회
-  /// GET /api/db-lists?search=이벤트
-  static Future<Map<String, dynamic>> getDbLists({
-    String? search,
-  }) async {
+  static final ApiClient _client = ApiClient();
+
+  /// DB 리스트 조회
+  /// GET /api/db-lists?search=keyword
+  static Future<Map<String, dynamic>> getDbLists({String? search}) async {
     try {
-      final token = await TokenManager.getToken();
-      if (token == null) {
-        return {
-          'success': false,
-          'message': '로그인이 필요합니다.',
-        };
-      }
-
-      final queryParams = <String, String>{};
+      String endpoint = ApiConfig.dbLists;
       if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
+        endpoint += '?search=$search';
       }
 
-      final url = Uri.parse(
-        ApiConfig.getUrl(ApiConfig.dbLists),
-      ).replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final data = await _client.get(endpoint);
 
-      final response = await http
-          .get(
-            url,
-            headers: ApiConfig.authHeaders(token),
-          )
-          .timeout(ApiConfig.connectionTimeout);
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (data['success'] == true) {
         return {
           'success': true,
           'dbLists': data['data'],
-        };
-      } else if (response.statusCode == 401) {
-        await TokenManager.clearAll();
-        return {
-          'success': false,
-          'message': '로그인이 만료되었습니다.',
-          'requireLogin': true,
         };
       } else {
         return {
@@ -57,6 +29,13 @@ class DbListApiService {
           'message': data['message'] ?? 'DB 리스트 조회에 실패했습니다.',
         };
       }
+    } on ApiException catch (e) {
+      return {
+        'success': false,
+        'message': e.message,
+        'errorCode': e.errorCode,
+        'requireLogin': e.isUnauthorized,
+      };
     } catch (e) {
       return {
         'success': false,
@@ -65,62 +44,38 @@ class DbListApiService {
     }
   }
 
-  /// 특정 DB의 고객 목록 조회
-  /// GET /api/db-lists/:dbId/customers?status=미사용&page=1&limit=50
-  static Future<Map<String, dynamic>> getDbCustomers({
+  /// DB 활성화/비활성화 토글
+  /// PUT /api/db-lists/:dbId/toggle
+  static Future<Map<String, dynamic>> toggleDbList({
     required int dbId,
-    String? status, // '미사용' or '사용완료'
-    int page = 1,
-    int limit = 50,
+    required bool isActive,
   }) async {
     try {
-      final token = await TokenManager.getToken();
-      if (token == null) {
-        return {
-          'success': false,
-          'message': '로그인이 필요합니다.',
-        };
-      }
+      final data = await _client.put(
+        ApiConfig.dbListToggle(dbId),
+        {'isActive': isActive},
+      );
 
-      final queryParams = <String, String>{
-        'page': page.toString(),
-        'limit': limit.toString(),
-        if (status != null && status.isNotEmpty) 'status': status,
-      };
-
-      final url = Uri.parse(
-        ApiConfig.getUrl(ApiConfig.dbListCustomers(dbId)),
-      ).replace(queryParameters: queryParams);
-
-      final response = await http
-          .get(
-            url,
-            headers: ApiConfig.authHeaders(token),
-          )
-          .timeout(ApiConfig.connectionTimeout);
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (data['success'] == true) {
         return {
           'success': true,
-          'dbInfo': data['data']['dbInfo'],
-          'customers': data['data']['customers'],
-          'pagination': data['data']['pagination'],
-        };
-      } else if (response.statusCode == 401) {
-        await TokenManager.clearAll();
-        return {
-          'success': false,
-          'message': '로그인이 만료되었습니다.',
-          'requireLogin': true,
+          'message': data['message'],
+          'dbId': data['data']['dbId'],
+          'isActive': data['data']['isActive'],
         };
       } else {
         return {
           'success': false,
-          'message': data['message'] ?? '고객 목록 조회에 실패했습니다.',
+          'message': data['message'] ?? 'DB 상태 업데이트에 실패했습니다.',
         };
       }
+    } on ApiException catch (e) {
+      return {
+        'success': false,
+        'message': e.message,
+        'errorCode': e.errorCode,
+        'requireLogin': e.isUnauthorized,
+      };
     } catch (e) {
       return {
         'success': false,

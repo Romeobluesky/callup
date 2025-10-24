@@ -10,6 +10,7 @@ import 'dashboard_screen.dart';
 import 'stats_screen.dart';
 import 'customer_search_screen.dart';
 import 'call_result_screen.dart';
+import 'signup_screen.dart';
 
 class AutoCallScreen extends StatefulWidget {
   const AutoCallScreen({super.key});
@@ -234,27 +235,28 @@ class _AutoCallScreenState extends State<AutoCallScreen>
       debugPrint('DB ID: $dbId');
       debugPrint('제목: ${selectedDB['title']}');
 
-      // API에서 고객 데이터 가져오기
-      final result = await AutoCallApiService.getNextCustomer(dbId: dbId);
+      // API에서 고객 큐 가져오기 (100명)
+      final result = await AutoCallApiService.startAutoCalling(
+        dbId: dbId,
+        count: 100,
+      );
 
       if (!mounted) return;
 
-      if (result['success'] == true && result['customer'] != null) {
-        final customer = result['customer'];
+      if (result['success'] == true && result['customers'] != null) {
+        final customers = result['customers'] as List;
 
         setState(() {
-          _customers = [
-            {
-              'customerId': customer['customerId'],
-              'event': customer['eventName'] ?? '-',
-              'phone': customer['phone'] ?? '-',
-              'name': customer['name'] ?? '-',
-              'info1': customer['customerInfo1'] ?? '-',
-              'info2': customer['customerInfo2'] ?? '-',
-              'info3': customer['customerInfo3'] ?? '-',
-              'dataStatus': customer['dataStatus'] ?? '미사용',
-            }
-          ];
+          _customers = customers.map((customer) => {
+            'customerId': customer['customerId'],
+            'event': customer['eventName'] ?? '-',
+            'phone': customer['phone'] ?? '-',
+            'name': customer['name'] ?? '-',
+            'info1': customer['info1'] ?? '-',
+            'info2': customer['info2'] ?? '-',
+            'info3': customer['info3'] ?? '-',
+            'dataStatus': customer['dataStatus'] ?? '미사용',
+          }).toList();
         });
 
         debugPrint('고객 로드 완료: ${_customers.length}명');
@@ -264,7 +266,10 @@ class _AutoCallScreenState extends State<AutoCallScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('로그인이 만료되었습니다.')),
         );
-        // TODO: Navigate to login screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+        );
       } else {
         debugPrint('고객 로드 실패: ${result['message']}');
         if (!mounted) return;

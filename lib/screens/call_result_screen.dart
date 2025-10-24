@@ -6,6 +6,7 @@ import 'dashboard_screen.dart';
 import 'customer_search_screen.dart';
 import 'stats_screen.dart';
 import 'auto_call_screen.dart';
+import 'signup_screen.dart';
 
 class CallResultScreen extends StatefulWidget {
   final Map<String, dynamic> customer;
@@ -231,13 +232,21 @@ class _CallResultScreenState extends State<CallResultScreen> {
       // 통화 시간 포맷 변환
       String formattedDuration = _formatCallDuration(widget.callDuration);
 
-      // API로 통화 결과 저장
-      final result = await AutoCallApiService.saveCallLog(
+      // 통화 시작/종료 시간 계산 (현재 시간 기준)
+      final now = DateTime.now();
+      final callEndTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+      final callStartDateTime = now.subtract(Duration(seconds: widget.callDuration));
+      final callStartTime = '${callStartDateTime.hour.toString().padLeft(2, '0')}:${callStartDateTime.minute.toString().padLeft(2, '0')}:${callStartDateTime.second.toString().padLeft(2, '0')}';
+
+      // API로 통화 결과 저장 (통화 연결된 경우)
+      final result = await AutoCallApiService.saveCallResult(
         customerId: customerId,
         dbId: dbId,
         callResult: _callResult,
         consultationResult: _consultResult,
         memo: _memoController.text.trim().isNotEmpty ? _memoController.text.trim() : null,
+        callStartTime: callStartTime,
+        callEndTime: callEndTime,
         callDuration: formattedDuration,
         reservationDate: formattedDate,
         reservationTime: formattedTime,
@@ -257,10 +266,14 @@ class _CallResultScreenState extends State<CallResultScreen> {
         Navigator.pop(context);
       } else if (result['requireLogin'] == true) {
         // JWT 토큰 만료
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('로그인이 만료되었습니다.')),
         );
-        // TODO: Navigate to login screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+        );
       } else {
         // 저장 실패
         ScaffoldMessenger.of(context).showSnackBar(

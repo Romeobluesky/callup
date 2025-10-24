@@ -1,50 +1,50 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
 import '../../utils/token_manager.dart';
+import 'api_client.dart';
 
-/// 인증 API 서비스
-/// 로그인, 로그아웃 등 인증 관련 API 호출
+/// 인증 API 서비스 - v3.0.0
+/// 로그인, 로그아웃, 토큰 갱신 등 인증 관련 API 호출
 
 class AuthApiService {
-  /// 로그인
+  static final ApiClient _client = ApiClient();
+
+  /// 업체 기반 로그인 (v3.0.0)
   /// POST /api/auth/login
+  /// 업체 ID + 비밀번호 + 상담원 이름으로 로그인
   static Future<Map<String, dynamic>> login({
-    required String userId,
+    required String companyLoginId,
+    required String companyPassword,
     required String userName,
-    required String password,
   }) async {
     try {
-      final url = Uri.parse(ApiConfig.getUrl(ApiConfig.login));
-      final response = await http
-          .post(
-            url,
-            headers: ApiConfig.defaultHeaders,
-            body: jsonEncode({
-              'userId': userId,
-              'userName': userName,
-              'password': password,
-            }),
-          )
-          .timeout(ApiConfig.connectionTimeout);
+      final data = await _client.post(
+        ApiConfig.authLogin,
+        {
+          'companyLoginId': companyLoginId,
+          'companyPassword': companyPassword,
+          'userName': userName,
+        },
+      );
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (data['success'] == true) {
         // JWT 토큰 저장
         final token = data['data']['token'];
         await TokenManager.saveToken(token);
+        _client.setToken(token);
 
         // 사용자 정보 저장
         await TokenManager.saveUserInfo(
-          userId: data['data']['user']['userId'],
+          userId: data['data']['user']['userId'].toString(),
           userName: data['data']['user']['userName'],
+          companyId: data['data']['company']['companyId'].toString(),
+          companyName: data['data']['company']['companyName'],
         );
 
         return {
           'success': true,
           'message': data['message'],
           'user': data['data']['user'],
+          'company': data['data']['company'],
         };
       } else {
         return {
@@ -52,6 +52,12 @@ class AuthApiService {
           'message': data['message'] ?? '로그인에 실패했습니다.',
         };
       }
+    } on ApiException catch (e) {
+      return {
+        'success': false,
+        'message': e.message,
+        'errorCode': e.errorCode,
+      };
     } catch (e) {
       return {
         'success': false,

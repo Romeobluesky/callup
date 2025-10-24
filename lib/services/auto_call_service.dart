@@ -339,7 +339,7 @@ class AutoCallService {
       }
 
       // API로 부재중 결과 저장
-      final apiResult = await AutoCallApiService.saveCallLog(
+      final apiResult = await AutoCallApiService.saveAutoCallLog(
         customerId: customerId,
         dbId: dbId,
         callResult: result, // "부재중" 또는 "무응답"
