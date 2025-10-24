@@ -22,8 +22,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _handleSignIn() {
-    // Navigate to dashboard without validation
+  Future<void> _handleSignIn() async {
+    // 필수값 검증 없이 바로 대시보드로 이동
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(

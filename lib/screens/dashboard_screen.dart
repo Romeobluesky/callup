@@ -16,6 +16,73 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOn = true;
   int _selectedIndex = 0;
+  bool _isLoading = true;
+
+  // API 데이터
+  String _userName = '';
+  String _userPhone = '';
+  String _statusMessage = '';
+  String _lastActiveTime = '';
+  int _todayCallCount = 0;
+  String _todayCallDuration = '00:00:00';
+  int _connectedCount = 0;
+  int _failedCount = 0;
+  int _callbackCount = 0;
+  List<dynamic> _dbLists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    // API 호출 없이 더미 데이터로 초기화
+    setState(() {
+      _userName = '테스트 상담원';
+      _userPhone = '010-1234-5678';
+      _statusMessage = '업무 중';
+      _lastActiveTime = DateTime.now().toString().substring(0, 19);
+      _isOn = true;
+
+      _todayCallCount = 150;
+      _todayCallDuration = '02:30:45';
+
+      _connectedCount = 120;
+      _failedCount = 25;
+      _callbackCount = 5;
+
+      _dbLists = [
+        {
+          'date': '2025-10-14',
+          'title': '이벤트01_251014',
+          'total': 500,
+          'unused': 250,
+        },
+        {
+          'date': '2025-10-13',
+          'title': '이벤트02_251013',
+          'total': 300,
+          'unused': 120,
+        },
+        {
+          'date': '2025-10-12',
+          'title': '이벤트03_251012',
+          'total': 400,
+          'unused': 180,
+        },
+      ];
+
+      _isLoading = false;
+    });
+  }
+
+  void _toggleUserStatus() {
+    // API 호출 없이 토글만 수행
+    setState(() {
+      _isOn = !_isOn;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,44 +90,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: const Color(0xFF585667),
       body: Stack(
         children: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 95),
-              child: Column(
-                children: [
-                  // Header
-                  _buildHeader(),
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF0756)),
+              ),
+            )
+          else
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 95),
+                child: Column(
+                  children: [
+                    // Header
+                    _buildHeader(),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Consultant Card
-                  _buildConsultantCard(),
+                    // Consultant Card
+                    _buildConsultantCard(),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Today's Statistics Card
-                  _buildTodayStatsCard(),
+                    // Today's Statistics Card
+                    _buildTodayStatsCard(),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Statistics Cards Row
-                  _buildStatisticsRow(),
+                    // Statistics Cards Row
+                    _buildStatisticsRow(),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // List Card
-                  _buildListCard(),
+                    // List Card
+                    _buildListCard(),
 
-                  const SizedBox(height: 30),
+                    const SizedBox(height: 30),
 
-                  // START Button
-                  _buildStartButton(),
+                    // START Button
+                    _buildStartButton(),
 
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
-          ),
 
           // Bottom Navigation Bar
           Positioned(
@@ -250,9 +324,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: const Color(0xFF383743),
               ),
               const SizedBox(width: 10),
-              const Text(
-                '2025-10-15 14:15:25',
-                style: TextStyle(
+              Text(
+                _lastActiveTime.isNotEmpty
+                    ? _lastActiveTime
+                    : DateTime.now().toString().substring(0, 19),
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFF9F8EB),
@@ -285,9 +361,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    '김상담님',
-                    style: TextStyle(
+                  Text(
+                    '$_userName님',
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFF9F8EB),
@@ -296,9 +372,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              const Text(
-                '010-1234-5678',
-                style: TextStyle(
+              Text(
+                _userPhone,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFF9F8EB),
@@ -312,20 +388,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '오늘은 대박나는 날~!!',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF9F8EB),
+              Expanded(
+                child: Text(
+                  _statusMessage.isNotEmpty
+                      ? _statusMessage
+                      : '상태 메시지 없음',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFF9F8EB),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 10),
               GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isOn = !_isOn;
-                  });
-                },
+                onTap: _toggleUserStatus,
                 child: Container(
                   width: 70,
                   height: 32,
@@ -417,9 +495,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Text(
-            '통화건 : 125건',
-            style: TextStyle(
+          Text(
+            '통화건 : $_todayCallCount건',
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: Color(0xFFFFCDDD),
@@ -427,9 +505,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          const Text(
-            '통화시간 : 05:20:15',
-            style: TextStyle(
+          Text(
+            '통화시간 : $_todayCallDuration',
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: Color(0xFFFFCDDD),
@@ -450,9 +528,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildStatCard('연결성공 : 100건', cardWidth),
-          _buildStatCard('연결실패 : 25건', cardWidth),
-          _buildStatCard('재연락 : 10건', cardWidth),
+          _buildStatCard('연결성공 : $_connectedCount건', cardWidth),
+          _buildStatCard('연결실패 : $_failedCount건', cardWidth),
+          _buildStatCard('재연락 : $_callbackCount건', cardWidth),
         ],
       ),
     );
@@ -511,22 +589,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth * 0.9;
 
-    // 실제로는 customers.csv 파일 정보를 표시
-    final List<Map<String, dynamic>> listData = [
-      {
-        'id': 'customers_20251020',
-        'fileName': 'customers.csv',
-        'date': '2025-10-20',
-        'title': '테스트01_인천',
-        'total': 8,
-        'unused': 8,
-        'count': '8/8'
-      },
-      {'date': '2025-10-14', 'title': '이벤트01_251014', 'total': 500, 'unused': 250, 'count': '500/250'},
-      {'date': '2025-10-12', 'title': '서울경기_251012', 'total': 500, 'unused': 420, 'count': '500/420'},
-      {'date': '2025-10-10', 'title': '인천부평구_251010', 'total': 500, 'unused': 500, 'count': '500/500'},
-    ];
-
     return Container(
       width: cardWidth,
       padding: const EdgeInsets.fromLTRB(10, 15, 10, 10),
@@ -544,14 +606,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         children: [
           // List items (최대 3개만 표시)
-          ...List.generate(
-            listData.length > 3 ? 3 : listData.length,
-            (index) => Padding(
-              padding: EdgeInsets.only(bottom: index < 2 ? 8 : 0),
-              child: GestureDetector(
-                onTap: () {
-                  // DB 선택
-                  DBManager().selectDB(listData[index]);
+          if (_dbLists.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'DB 리스트가 없습니다.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFFF9F8EB),
+                ),
+              ),
+            )
+          else
+            ...List.generate(
+              _dbLists.length > 3 ? 3 : _dbLists.length,
+              (index) {
+                final dbItem = _dbLists[index];
+                return Padding(
+                  padding: EdgeInsets.only(bottom: index < 2 ? 8 : 0),
+                  child: GestureDetector(
+                    onTap: () {
+                      // DB 선택
+                      DBManager().selectDB({
+                        'dbId': dbItem['dbId'],
+                        'date': dbItem['date'],
+                        'title': dbItem['title'],
+                        'totalCount': dbItem['totalCount'],
+                        'unusedCount': dbItem['unusedCount'],
+                      });
 
                   // AutoCallScreen으로 이동
                   Navigator.push(
@@ -593,50 +675,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // 날짜
-                      Text(
-                        listData[index]['date']!.toString(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF585667),
-                        ),
-                      ),
-                      // 제목
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 15),
-                          child: Text(
-                            listData[index]['title']!.toString(),
-                            textAlign: TextAlign.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // 날짜
+                          Text(
+                            dbItem['date']?.toString() ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF585667),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
                           ),
-                        ),
+                          // 제목
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 15),
+                              child: Text(
+                                dbItem['title']?.toString() ?? '',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF585667),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ),
+                          // 갯수
+                          Text(
+                            '${dbItem['totalCount']}/${dbItem['unusedCount']}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF585667),
+                            ),
+                          ),
+                        ],
                       ),
-                      // 갯수
-                      Text(
-                        listData[index]['count']!.toString(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF585667),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ),
           const SizedBox(height: 8),
           // More button
           Align(

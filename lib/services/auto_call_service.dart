@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/auto_call_state.dart';
 import 'phone_service.dart';
 import 'overlay_service.dart';
+import 'api/auto_call_api_service.dart';
 
 /// 자동 전화 서비스 (Singleton)
 class AutoCallService {
@@ -327,8 +328,33 @@ class AutoCallService {
   /// 자동 부재중 저장
   Future<void> _saveAutoResult(Map<String, dynamic> customer, String result) async {
     debugPrint('자동 저장: ${customer['name']} - $result');
-    // TODO: CSV 업데이트 또는 DB 저장
-    // 현재는 로그만 출력
+
+    try {
+      final customerId = customer['customerId'];
+      final dbId = customer['dbId'];
+
+      if (customerId == null || dbId == null) {
+        debugPrint('고객 ID 또는 DB ID가 없어 자동 저장 불가');
+        return;
+      }
+
+      // API로 부재중 결과 저장
+      final apiResult = await AutoCallApiService.saveCallLog(
+        customerId: customerId,
+        dbId: dbId,
+        callResult: result, // "부재중" 또는 "무응답"
+        consultationResult: result,
+        callDuration: '00:00:00',
+      );
+
+      if (apiResult['success'] == true) {
+        debugPrint('자동 저장 성공: ${customer['name']} - $result');
+      } else {
+        debugPrint('자동 저장 실패: ${apiResult['message']}');
+      }
+    } catch (e) {
+      debugPrint('자동 저장 오류: $e');
+    }
   }
 
   /// 자동 전화 중지 (END 버튼)

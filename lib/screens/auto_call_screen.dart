@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:csv/csv.dart';
-import 'package:charset_converter/charset_converter.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/auto_call_service.dart';
 import '../services/db_manager.dart';
 import '../services/phone_service.dart';
+import '../services/api/auto_call_api_service.dart';
 import '../models/auto_call_state.dart';
 import 'dashboard_screen.dart';
 import 'stats_screen.dart';
@@ -226,53 +224,60 @@ class _AutoCallScreenState extends State<AutoCallScreen>
         return;
       }
 
-      final fileName = selectedDB['fileName'] ?? 'customers.csv';
-      debugPrint('=== DB 로드 시작 ===');
-      debugPrint('파일명: $fileName');
+      final dbId = selectedDB['dbId'] ?? selectedDB['id'];
+      if (dbId == null) {
+        debugPrint('DB ID가 없습니다.');
+        return;
+      }
+
+      debugPrint('=== DB 로드 시작 (API) ===');
+      debugPrint('DB ID: $dbId');
       debugPrint('제목: ${selectedDB['title']}');
 
-      final ByteData bytes = await rootBundle.load('assets/test_data/$fileName');
-      final Uint8List uint8list = bytes.buffer.asUint8List();
-      final String csvString = await CharsetConverter.decode("EUC-KR", uint8list);
+      // API에서 고객 데이터 가져오기
+      final result = await AutoCallApiService.getNextCustomer(dbId: dbId);
 
-      List<List<dynamic>> csvData = const CsvToListConverter().convert(csvString);
+      if (!mounted) return;
 
-      if (csvData.isEmpty) return;
+      if (result['success'] == true && result['customer'] != null) {
+        final customer = result['customer'];
 
-      csvData.removeAt(0); // 헤더 제거
-
-      setState(() {
-        _customers = csvData.map((row) {
-          String getValue(int index, [String defaultValue = '']) {
-            if (index < row.length && row[index] != null) {
-              return row[index].toString().trim();
+        setState(() {
+          _customers = [
+            {
+              'customerId': customer['customerId'],
+              'event': customer['eventName'] ?? '-',
+              'phone': customer['phone'] ?? '-',
+              'name': customer['name'] ?? '-',
+              'info1': customer['customerInfo1'] ?? '-',
+              'info2': customer['customerInfo2'] ?? '-',
+              'info3': customer['customerInfo3'] ?? '-',
+              'dataStatus': customer['dataStatus'] ?? '미사용',
             }
-            return defaultValue;
-          }
+          ];
+        });
 
-          return {
-            'event': getValue(0),
-            'phone': getValue(1),
-            'name': getValue(2),
-            'info2': getValue(3),
-            'info3': getValue(4),
-            'info4': getValue(5),
-            'date': getValue(14, getValue(6, '2025-10-01')),
-            'callStatus': getValue(7, '미사용'),
-            'customerType': getValue(8).isEmpty ? null : getValue(8),
-            'callDateTime': getValue(12).isEmpty ? null : getValue(12),
-            'callDuration': getValue(13).isEmpty ? null : getValue(13),
-            'memo': getValue(11).isEmpty ? null : getValue(11),
-            'hasAudio': false,
-            'uploadDate': getValue(14),
-            'description': getValue(15),
-          };
-        }).toList();
-      });
-
-      debugPrint('고객 로드 완료: ${_customers.length}명');
+        debugPrint('고객 로드 완료: ${_customers.length}명');
+      } else if (result['requireLogin'] == true) {
+        // JWT 토큰 만료 → 로그인 화면으로
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 만료되었습니다.')),
+        );
+        // TODO: Navigate to login screen
+      } else {
+        debugPrint('고객 로드 실패: ${result['message']}');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? '고객 조회에 실패했습니다.')),
+        );
+      }
     } catch (e) {
       debugPrint('고객 로드 오류: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('네트워크 오류: $e')),
+      );
     }
   }
 
@@ -762,10 +767,10 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   Widget _buildCustomerTable() {
     final List<Map<String, String>> customerData = [
       {'label': '전화번호', 'value': _currentCustomer?['phone'] ?? '-'},
-      {'label': '고객정보1', 'value': _currentCustomer?['name'] ?? '-'},
+      {'label': '고객명', 'value': _currentCustomer?['name'] ?? '-'},
+      {'label': '고객정보1', 'value': _currentCustomer?['info1'] ?? '-'},
       {'label': '고객정보2', 'value': _currentCustomer?['info2'] ?? '-'},
       {'label': '고객정보3', 'value': _currentCustomer?['info3'] ?? '-'},
-      {'label': '고객정보4', 'value': _currentCustomer?['info4'] ?? '-'},
     ];
 
     return Column(

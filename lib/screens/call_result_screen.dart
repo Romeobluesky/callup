@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/auto_call_service.dart';
+import '../services/api/auto_call_api_service.dart';
 import 'dashboard_screen.dart';
 import 'customer_search_screen.dart';
 import 'stats_screen.dart';
@@ -199,6 +200,79 @@ class _CallResultScreenState extends State<CallResultScreen> {
       setState(() {
         _reservationTime = picked;
       });
+    }
+  }
+
+  Future<void> _saveCallResult() async {
+    try {
+      // 고객 ID와 DB ID 확인
+      final customerId = widget.customer['customerId'];
+      final dbId = widget.customer['dbId'];
+
+      if (customerId == null || dbId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('고객 정보가 없습니다.')),
+        );
+        return;
+      }
+
+      // 날짜/시간 포맷 변환
+      String? formattedDate;
+      if (_reservationDate != null) {
+        formattedDate = '${_reservationDate!.year}-${_reservationDate!.month.toString().padLeft(2, '0')}-${_reservationDate!.day.toString().padLeft(2, '0')}';
+      }
+
+      String? formattedTime;
+      if (_reservationTime != null) {
+        formattedTime = '${_reservationTime!.hour.toString().padLeft(2, '0')}:${_reservationTime!.minute.toString().padLeft(2, '0')}:00';
+      }
+
+      // 통화 시간 포맷 변환
+      String formattedDuration = _formatCallDuration(widget.callDuration);
+
+      // API로 통화 결과 저장
+      final result = await AutoCallApiService.saveCallLog(
+        customerId: customerId,
+        dbId: dbId,
+        callResult: _callResult,
+        consultationResult: _consultResult,
+        memo: _memoController.text.trim().isNotEmpty ? _memoController.text.trim() : null,
+        callDuration: formattedDuration,
+        reservationDate: formattedDate,
+        reservationTime: formattedTime,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        debugPrint('통화 결과 저장 성공');
+
+        // 자동 전화가 실행 중이면 다음 고객으로 재개
+        if (AutoCallService().isRunning) {
+          AutoCallService().resumeAfterResult();
+        }
+
+        // AutoCallScreen으로 복귀
+        Navigator.pop(context);
+      } else if (result['requireLogin'] == true) {
+        // JWT 토큰 만료
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 만료되었습니다.')),
+        );
+        // TODO: Navigate to login screen
+      } else {
+        // 저장 실패
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? '저장에 실패했습니다.')),
+        );
+      }
+    } catch (e) {
+      debugPrint('통화 결과 저장 오류: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('네트워크 오류: $e')),
+      );
     }
   }
 
@@ -721,17 +795,9 @@ class _CallResultScreenState extends State<CallResultScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () {
-                  // 결과 저장 (TODO: 실제 저장 로직 구현)
-                  debugPrint('통화 결과 저장: $_callResult, 상담 결과: $_consultResult');
-
-                  // 자동 전화가 실행 중이면 다음 고객으로 재개
-                  if (AutoCallService().isRunning) {
-                    AutoCallService().resumeAfterResult();
-                  }
-
-                  // AutoCallScreen으로 복귀 (pop으로 변경)
-                  Navigator.pop(context);
+                onTap: () async {
+                  // API로 통화 결과 저장
+                  await _saveCallResult();
                 },
                 child: Container(
                   width: 62,
