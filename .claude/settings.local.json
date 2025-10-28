@@ -24,7 +24,9 @@
       "Bash(flutter build:*)",
       "Bash(\"C:\\Users\\hyesu\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe\" install -r \"C:\\Users\\hyesu\\Desktop\\dev\\VSCODE\\callup\\build\\app\\outputs\\flutter-apk\\app-release.apk\")",
       "Bash(flutter analyze:*)",
-      "Bash(Select-String -Pattern \"flutter|CallUp|API|JWT|토큰|로그인\")"
+      "Bash(Select-String -Pattern \"flutter|CallUp|API|JWT|토큰|로그인\")",
+      "Bash(curl:*)",
+      "Read(//c/Users/hyesu/Desktop/dev/VSCODE//**)"
     ],
     "deny": [],
     "ask": []

@@ -174,6 +174,7 @@ CREATE TABLE db_assignments (
 CREATE TABLE customers (
     customer_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '고객 ID',
     db_id INT NOT NULL COMMENT 'DB ID (외래키)',
+    company_login_id VARCHAR(50) NOT NULL COMMENT '소속 업체 로그인 ID (외래키)',
     assigned_user_id INT COMMENT '할당된 상담원 ID (외래키)',
 
     -- CSV 기본 정보 (0-5번 컬럼)
@@ -209,23 +210,64 @@ CREATE TABLE customers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '시스템 최종 수정일',
 
     FOREIGN KEY (db_id) REFERENCES db_lists(db_id) ON DELETE CASCADE,
+    FOREIGN KEY (company_login_id) REFERENCES companies(company_login_id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_user_id) REFERENCES users(user_id) ON DELETE SET NULL,
     INDEX idx_db_id (db_id),
+    INDEX idx_company_login_id (company_login_id),
     INDEX idx_assigned_user (assigned_user_id),
     INDEX idx_phone (customer_phone),
     INDEX idx_name (customer_name),
     INDEX idx_data_status (data_status),
     INDEX idx_call_datetime (call_datetime),
-    INDEX idx_reservation_date (reservation_date)
+    INDEX idx_reservation_date (reservation_date),
+    INDEX idx_event_phone (event_name, customer_phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객 정보';
 ```
 
 **주요 변경사항**:
+- ✅ 추가: `company_login_id` (소속 업체, 중복 체크 및 업체별 고객 조회용)
 - ✅ 추가: `assigned_user_id` (할당된 상담원)
+- ✅ 추가: `idx_event_phone` 인덱스 (이벤트명 + 전화번호 중복 체크 최적화)
 
 ---
 
-### 6. call_logs (통화 로그)
+### 6. do_not_call_list (수신거부 관리) ⭐ 신규
+
+업체별 수신거부 고객 관리 (DNC - Do Not Call)
+
+```sql
+CREATE TABLE do_not_call_list (
+    dnc_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '수신거부 ID',
+    company_login_id VARCHAR(50) NOT NULL COMMENT '업체 로그인 ID (외래키)',
+
+    -- 고객 정보
+    customer_phone VARCHAR(20) NOT NULL COMMENT '수신거부 전화번호',
+    customer_name VARCHAR(50) COMMENT '고객명',
+
+    -- 수신거부 정보
+    reason VARCHAR(200) COMMENT '수신거부 사유',
+    registered_by VARCHAR(50) COMMENT '등록자 (상담원명)',
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '등록 일시',
+
+    -- 메타 정보
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성일',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최종 수정일',
+
+    FOREIGN KEY (company_login_id) REFERENCES companies(company_login_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_company_phone (company_login_id, customer_phone),
+    INDEX idx_company_login_id (company_login_id),
+    INDEX idx_phone (customer_phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='수신거부 관리';
+```
+
+**주요 특징**:
+- ✅ 업체별 수신거부 관리 (업체 A의 수신거부가 업체 B에 영향 없음)
+- ✅ `UNIQUE KEY (company_login_id, customer_phone)`: 업체당 전화번호 중복 방지
+- ✅ DB 업로드 시 자동 필터링 가능
+
+---
+
+### 7. call_logs (통화 로그) ✏️ 수정
 
 개별 통화 이력 로그
 
@@ -768,7 +810,58 @@ UPDATE db_lists SET company_id = 1;  -- 모든 DB를 legacy_company에 할당
 
 ---
 
+## 주요 쿼리 (추가 사항)
+
+### 9. 중복 체크 (엑셀 업로드 전)
+
+```sql
+-- 이벤트명 + 전화번호로 중복 체크
+SELECT COUNT(*) as count
+FROM customers
+WHERE company_login_id = ?
+AND event_name = ?
+AND customer_phone = ?;
+```
+
+### 10. 수신거부 확인
+
+```sql
+-- 업체별 수신거부 고객 확인
+SELECT COUNT(*) as is_blocked
+FROM do_not_call_list
+WHERE company_login_id = ?
+AND customer_phone = ?;
+```
+
+### 11. 수신거부 등록
+
+```sql
+-- 수신거부 고객 등록
+INSERT INTO do_not_call_list (
+    company_login_id,
+    customer_phone,
+    customer_name,
+    reason,
+    registered_by
+) VALUES (?, ?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE
+    customer_name = VALUES(customer_name),
+    reason = VALUES(reason),
+    registered_by = VALUES(registered_by),
+    registered_at = CURRENT_TIMESTAMP;
+```
+
+---
+
 ## 변경 이력
+
+**v3.1.0** (2025-10-28):
+- ✅ do_not_call_list 테이블 추가 (수신거부 관리)
+- ✅ customers 테이블에 company_login_id 컬럼 추가
+- ✅ customers 테이블에 idx_event_phone 인덱스 추가 (중복 체크 최적화)
+- ✅ 중복 체크 기능 추가 (이벤트명 + 전화번호 기준)
+- ✅ 엑셀 업로드 시 중복 데이터 필터링 기능
+- ✅ 엑셀 업로드 모달 UI 개선 (미리보기 + 중복 체크 결과 표시)
 
 **v3.0.0** (2025-10-24):
 - ✅ companies 테이블 추가 (업체 계정)
