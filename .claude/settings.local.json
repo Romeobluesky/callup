@@ -26,7 +26,12 @@
       "Bash(flutter analyze:*)",
       "Bash(Select-String -Pattern \"flutter|CallUp|API|JWT|토큰|로그인\")",
       "Bash(curl:*)",
-      "Read(//c/Users/hyesu/Desktop/dev/VSCODE//**)"
+      "Read(//c/Users/hyesu/Desktop/dev/VSCODE//**)",
+      "Bash(Select-String -Pattern \"error|warning\" -Context 0,2)",
+      "Bash(flutter logs:*)",
+      "Bash(Select-Object -Last 50)",
+      "Bash(Select-String -Pattern \"flutter|CallUp|API|Dashboard|error\" -Context 0,2)",
+      "Bash(del DATABASE_MIGRATION_REQUEST.md DASHBOARD_500_ERROR_REQUEST.md API_TEAM_URGENT_REQUEST.md)"
     ],
     "deny": [],
     "ask": []

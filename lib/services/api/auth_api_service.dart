@@ -36,7 +36,7 @@ class AuthApiService {
         await TokenManager.saveUserInfo(
           userId: data['data']['user']['userId'].toString(),
           userName: data['data']['user']['userName'],
-          companyId: data['data']['company']['companyId'].toString(),
+          companyLoginId: data['data']['company']['companyLoginId'],
           companyName: data['data']['company']['companyName'],
         );
 

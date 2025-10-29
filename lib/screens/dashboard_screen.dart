@@ -28,9 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _lastActiveTime = '';
   int _todayCallCount = 0;
   String _todayCallDuration = '00:00:00';
-  int _connectedCount = 0;
-  int _failedCount = 0;
-  int _callbackCount = 0;
+  int _successCount = 0;      // 통화성공 (call_result)
+  int _absentCount = 0;       // 부재중 (call_result)
+  int _recruitmentCount = 0;  // 가입유치 (consultation_result)
   List<dynamic> _dbLists = [];
 
   @override
@@ -68,8 +68,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           // 사용자 정보
           _userName = data['user']['userName'] ?? '상담원';
-          _userPhone = data['user']['phone'] ?? '-';
-          _statusMessage = data['user']['statusMessage'] ?? '업무 중';
+          _userPhone = data['user']['userPhone'] ?? '-';
+          _statusMessage = data['user']['userStatusMessage'] ?? '업무 중';
 
           // 출근 시간 표시 (출근 전에는 '-')
           _lastActiveTime = savedLoginTime ?? '-';
@@ -82,9 +82,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _todayCallDuration = data['todayStats']?['callDuration'] ?? '00:00:00';
 
           // 통화 결과 통계
-          _connectedCount = data['callResults']?['connected'] ?? 0;
-          _failedCount = data['callResults']?['failed'] ?? 0;
-          _callbackCount = data['callResults']?['callback'] ?? 0;
+          _successCount = data['callStats']?['successCount'] ?? 0;        // 통화성공
+          _absentCount = data['callStats']?['absentCount'] ?? 0;          // 부재중
+          _recruitmentCount = data['callStats']?['recruitmentCount'] ?? 0; // 가입유치
 
           // DB 리스트 (최대 3개)
           _dbLists = (data['dbLists'] as List?)?.take(3).toList() ?? [];
@@ -645,9 +645,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildStatCard('연결성공 : $_connectedCount건', cardWidth),
-          _buildStatCard('연결실패 : $_failedCount건', cardWidth),
-          _buildStatCard('재연락 : $_callbackCount건', cardWidth),
+          _buildStatCard('통화성공 : $_successCount건', cardWidth),
+          _buildStatCard('부재중 : $_absentCount건', cardWidth),
+          _buildStatCard('가입유치 : $_recruitmentCount건', cardWidth),
         ],
       ),
     );
@@ -795,9 +795,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // 날짜
+                          // 날짜 (날짜만 표시, 시간 제거)
                           Text(
-                            dbItem['date']?.toString() ?? '',
+                            dbItem['date']?.toString().substring(0, 10) ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

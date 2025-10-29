@@ -7,7 +7,7 @@ class TokenManager {
   static const String _tokenKey = 'jwt_token';
   static const String _userIdKey = 'user_id';
   static const String _userNameKey = 'user_name';
-  static const String _companyIdKey = 'company_id';
+  static const String _companyLoginIdKey = 'company_login_id';
   static const String _companyNameKey = 'company_name';
 
   /// JWT 토큰 저장
@@ -32,13 +32,13 @@ class TokenManager {
   static Future<void> saveUserInfo({
     required String userId,
     required String userName,
-    required String companyId,
+    required String companyLoginId,
     required String companyName,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userIdKey, userId);
     await prefs.setString(_userNameKey, userName);
-    await prefs.setString(_companyIdKey, companyId);
+    await prefs.setString(_companyLoginIdKey, companyLoginId);
     await prefs.setString(_companyNameKey, companyName);
   }
 
@@ -54,10 +54,10 @@ class TokenManager {
     return prefs.getString(_userNameKey);
   }
 
-  /// 업체 ID 조회
-  static Future<String?> getCompanyId() async {
+  /// 업체 로그인 ID 조회
+  static Future<String?> getCompanyLoginId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_companyIdKey);
+    return prefs.getString(_companyLoginIdKey);
   }
 
   /// 업체 이름 조회
@@ -71,7 +71,7 @@ class TokenManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userIdKey);
     await prefs.remove(_userNameKey);
-    await prefs.remove(_companyIdKey);
+    await prefs.remove(_companyLoginIdKey);
     await prefs.remove(_companyNameKey);
   }
 

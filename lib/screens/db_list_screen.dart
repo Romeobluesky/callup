@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/db_manager.dart';
+import '../services/api/dashboard_api_service.dart';
 import 'dashboard_screen.dart';
 import 'auto_call_screen.dart';
+import 'signup_screen.dart';
 
 class DbListScreen extends StatefulWidget {
   const DbListScreen({super.key});
@@ -16,47 +18,83 @@ class _DbListScreenState extends State<DbListScreen> {
   final int _selectedIndex = 0; // Home 탭 선택됨
   final TextEditingController _searchController = TextEditingController();
 
-  // 샘플 DB 리스트 데이터
-  final List<Map<String, dynamic>> _dbListData = [
-    {
-      'id': 'customers_20251020',
-      'fileName': 'customers.csv',
-      'date': '2025-10-20',
-      'title': '테스트01_인천',
-      'total': 8,
-      'unused': 8,
-    },
-    {
-      'date': '2025-10-14',
-      'title': '이벤트01_251014',
-      'total': 500,
-      'unused': 250,
-    },
-    {'date': '2025-10-12', 'title': '서울경기_251012', 'total': 500, 'unused': 420},
-    {
-      'date': '2025-10-10',
-      'title': '인천부평구_251010',
-      'total': 500,
-      'unused': 500,
-    },
-    {
-      'date': '2025-10-07',
-      'title': '이벤트01_251007',
-      'total': 500,
-      'unused': 500,
-    },
-    {
-      'date': '2025-10-07',
-      'title': '이벤트01_251007',
-      'total': 500,
-      'unused': 500,
-    },
-  ];
+  // API로 불러올 DB 리스트
+  List<Map<String, dynamic>> _dbListData = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDbLists();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDbLists({String? search}) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 대시보드 API 사용 (DB 리스트도 포함되어 있음)
+      final result = await DashboardApiService.getDashboard();
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        List<Map<String, dynamic>> allDbLists =
+            List<Map<String, dynamic>>.from(result['data']['dbLists'] ?? []);
+
+        // 검색어가 있으면 필터링
+        if (search != null && search.isNotEmpty) {
+          allDbLists = allDbLists.where((item) {
+            final title = item['title']?.toString().toLowerCase() ?? '';
+            return title.contains(search.toLowerCase());
+          }).toList();
+        }
+
+        setState(() {
+          _dbListData = allDbLists;
+          _isLoading = false;
+        });
+      } else if (result['requireLogin'] == true) {
+        // 로그인 만료
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const SignUpScreen()),
+          );
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'DB 리스트 로딩 실패'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('네트워크 오류: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -316,9 +354,17 @@ class _DbListScreenState extends State<DbListScreen> {
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
+              onSubmitted: (value) {
+                _loadDbLists(search: value.trim());
+              },
             ),
           ),
-          const Icon(Icons.search, color: Colors.white, size: 24),
+          GestureDetector(
+            onTap: () {
+              _loadDbLists(search: _searchController.text.trim());
+            },
+            child: const Icon(Icons.search, color: Colors.white, size: 24),
+          ),
         ],
       ),
     );
@@ -404,14 +450,30 @@ class _DbListScreenState extends State<DbListScreen> {
 
             // List Items
             Expanded(
-              child: ListView.separated(
-                itemCount: _dbListData.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final item = _dbListData[index];
-                  return _buildListItem(item);
-                },
-              ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF0756)),
+                      ),
+                    )
+                  : _dbListData.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'DB 리스트가 없습니다.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFF9F8EB),
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: _dbListData.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final item = _dbListData[index];
+                            return _buildListItem(item);
+                          },
+                        ),
             ),
           ],
         ),
@@ -422,8 +484,14 @@ class _DbListScreenState extends State<DbListScreen> {
   Widget _buildListItem(Map<String, dynamic> item) {
     return GestureDetector(
       onTap: () {
-        // DB 선택
-        DBManager().selectDB(item);
+        // DB 선택 (DBManager에 전달)
+        DBManager().selectDB({
+          'dbId': item['dbId'],
+          'date': item['date'],
+          'title': item['title'],
+          'totalCount': item['totalCount'],
+          'unusedCount': item['unusedCount'],
+        });
 
         // AutoCallScreen으로 이동
         Navigator.push(
@@ -465,9 +533,9 @@ class _DbListScreenState extends State<DbListScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // 날짜
+            // 날짜 (시간 제거)
             Text(
-              item['date'],
+              item['date']?.toString().substring(0, 10) ?? '',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -479,7 +547,7 @@ class _DbListScreenState extends State<DbListScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Text(
-                  item['title'],
+                  item['title']?.toString() ?? '',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 12,
@@ -491,9 +559,9 @@ class _DbListScreenState extends State<DbListScreen> {
                 ),
               ),
             ),
-            // 갯수
+            // 갯수 (총갯수/미사용)
             Text(
-              '${item['total']}/${item['unused']}',
+              '${item['totalCount']}/${item['unusedCount']}',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,

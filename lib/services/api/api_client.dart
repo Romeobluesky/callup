@@ -27,10 +27,22 @@ class ApiClient {
   Future<Map<String, dynamic>> get(String endpoint) async {
     await loadToken();
 
+    final url = '${ApiConfig.baseUrl}$endpoint';
+
+    // 디버그 로그
+    debugPrint('=== API GET 요청 ===');
+    debugPrint('URL: $url');
+    debugPrint('Headers: ${_getHeaders()}');
+
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}$endpoint'),
+      Uri.parse(url),
       headers: _getHeaders(),
     ).timeout(ApiConfig.connectionTimeout);
+
+    // 응답 로그
+    debugPrint('=== API 응답 ===');
+    debugPrint('Status: ${response.statusCode}');
+    debugPrint('Body: ${response.body}');
 
     return _handleResponse(response);
   }
