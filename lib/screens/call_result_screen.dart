@@ -26,14 +26,24 @@ class _CallResultScreenState extends State<CallResultScreen> {
   bool _isOn = false;
   final int _selectedIndex = 1;
 
-  String _callResult = '부재';
-  String _consultResult = '부재';
+  String _callResult = '통화성공';
+  String _consultResult = '가망고객';
   DateTime? _reservationDate;
   TimeOfDay? _reservationTime;
   final TextEditingController _memoController = TextEditingController();
 
-  final List<String> _callResultOptions = ['부재', '통화성공', '통화실패', '번호오류'];
-  final List<String> _consultResultOptions = ['부재', '가망고객', '비가망', '상담완료', '재상담'];
+  final List<String> _callResultOptions = ['통화성공', '부재중', '없는번호'];
+  final List<String> _consultResultOptions = ['재통화', '가망고객', '가입유치', '거절', '수신거부'];
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('=== CallResultScreen 초기화 ===');
+    debugPrint('고객 정보: ${widget.customer}');
+    debugPrint('customerId: ${widget.customer['customerId']}');
+    debugPrint('dbId: ${widget.customer['dbId']}');
+    debugPrint('통화 시간: ${widget.callDuration}초');
+  }
 
   @override
   void dispose() {
@@ -601,36 +611,25 @@ class _CallResultScreenState extends State<CallResultScreen> {
             _buildInfoRow('고객정보2', '인천 부평구', labelWidth),
             _buildInfoRow('고객정보3', '쿠팡 이벤트', labelWidth),
             _buildInfoRow('고객정보4', '#102354', labelWidth),
+            // 통화결과 / 상담결과 (등록 버튼 제거)
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          _buildTableCell('통화결과', labelWidth, isHeader: true),
-                          Expanded(child: _buildDropdown(_callResult, _callResultOptions, (value) {
-                            setState(() {
-                              _callResult = value!;
-                            });
-                          })),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          _buildTableCell('상담결과', labelWidth, isHeader: true),
-                          Expanded(child: _buildDropdown(_consultResult, _consultResultOptions, (value) {
-                            setState(() {
-                              _consultResult = value!;
-                            });
-                          })),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                _buildButton('등록', buttonWidth, hasTopBorder: false),
+                _buildTableCell('통화결과', labelWidth, isHeader: true),
+                Expanded(child: _buildDropdown(_callResult, _callResultOptions, (value) {
+                  setState(() {
+                    _callResult = value!;
+                  });
+                })),
+              ],
+            ),
+            Row(
+              children: [
+                _buildTableCell('상담결과', labelWidth, isHeader: true),
+                Expanded(child: _buildDropdown(_consultResult, _consultResultOptions, (value) {
+                  setState(() {
+                    _consultResult = value!;
+                  });
+                })),
               ],
             ),
           ],
@@ -658,93 +657,82 @@ class _CallResultScreenState extends State<CallResultScreen> {
         ),
         child: Column(
           children: [
+            // 통화예약 (알림 버튼 제거)
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildTableCell('통화예약', labelWidth, isHeader: true, hasTopBorder: true),
                 Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          _buildTableCell('통화예약', labelWidth, isHeader: true, hasTopBorder: true),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _selectDate(context),
-                              child: Container(
-                                height: 35,
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: const BoxDecoration(
-                                  border: Border(
-                                    top: BorderSide(color: Color(0xFFF9F8EB)),
-                                    right: BorderSide(color: Color(0xFFF9F8EB)),
-                                    bottom: BorderSide(color: Color(0xFFF9F8EB)),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.calendar_today, color: Color(0xFFF9F8EB), size: 16),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _reservationDate != null
-                                            ? '${_reservationDate!.year}-${_reservationDate!.month.toString().padLeft(2, '0')}-${_reservationDate!.day.toString().padLeft(2, '0')}'
-                                            : '2025-10-30',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFF9F8EB),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                  child: GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      height: 35,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFF9F8EB)),
+                          right: BorderSide(color: Color(0xFFF9F8EB)),
+                          bottom: BorderSide(color: Color(0xFFF9F8EB)),
+                        ),
+                      ),
+                      child: Center(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, color: Color(0xFFF9F8EB), size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              _reservationDate != null
+                                  ? '${_reservationDate!.year}-${_reservationDate!.month.toString().padLeft(2, '0')}-${_reservationDate!.day.toString().padLeft(2, '0')}'
+                                  : '2025-10-30',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF9F8EB),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      Row(
-                        children: [
-                          _buildTableCell('시간', labelWidth, isHeader: true),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _selectTime(context),
-                              child: Container(
-                                height: 35,
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: const BoxDecoration(
-                                  border: Border(
-                                    right: BorderSide(color: Color(0xFFF9F8EB)),
-                                    bottom: BorderSide(color: Color(0xFFF9F8EB)),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.access_time, color: Color(0xFFF9F8EB), size: 16),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _reservationTime != null
-                                            ? '${_reservationTime!.hour.toString().padLeft(2, '0')}:${_reservationTime!.minute.toString().padLeft(2, '0')}'
-                                            : '14:00',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFF9F8EB),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-                _buildButton('알림', buttonWidth),
+              ],
+            ),
+            Row(
+              children: [
+                _buildTableCell('시간', labelWidth, isHeader: true),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _selectTime(context),
+                    child: Container(
+                      height: 35,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Color(0xFFF9F8EB)),
+                          bottom: BorderSide(color: Color(0xFFF9F8EB)),
+                        ),
+                      ),
+                      child: Center(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time, color: Color(0xFFF9F8EB), size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              _reservationTime != null
+                                  ? '${_reservationTime!.hour.toString().padLeft(2, '0')}:${_reservationTime!.minute.toString().padLeft(2, '0')}'
+                                  : '14:00',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF9F8EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -920,52 +908,6 @@ class _CallResultScreenState extends State<CallResultScreen> {
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Color(0xFFF9F8EB),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, double width, {bool hasTopBorder = true, bool hasRightBorder = true, bool hasBottomBorder = true, bool hasLeftBorder = false}) {
-    return Container(
-      width: width,
-      height: 70,
-      decoration: BoxDecoration(
-        border: Border(
-          top: hasTopBorder ? const BorderSide(color: Color(0xFFF9F8EB)) : BorderSide.none,
-          left: hasLeftBorder ? const BorderSide(color: Color(0xFFF9F8EB)) : BorderSide.none,
-          right: hasRightBorder ? const BorderSide(color: Color(0xFFF9F8EB)) : BorderSide.none,
-          bottom: hasBottomBorder ? const BorderSide(color: Color(0xFFF9F8EB)) : BorderSide.none,
-        ),
-      ),
-      child: Center(
-        child: GestureDetector(
-          onTap: () {},
-          child: Container(
-            width: double.infinity,
-            height: 30,
-            margin: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF524C8A),
-              borderRadius: BorderRadius.circular(5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  offset: const Offset(0, 4),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF9F8EB),
-                ),
-              ),
-            ),
           ),
         ),
       ),

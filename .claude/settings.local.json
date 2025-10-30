@@ -31,7 +31,16 @@
       "Bash(flutter logs:*)",
       "Bash(Select-Object -Last 50)",
       "Bash(Select-String -Pattern \"flutter|CallUp|API|Dashboard|error\" -Context 0,2)",
-      "Bash(del DATABASE_MIGRATION_REQUEST.md DASHBOARD_500_ERROR_REQUEST.md API_TEAM_URGENT_REQUEST.md)"
+      "Bash(del DATABASE_MIGRATION_REQUEST.md DASHBOARD_500_ERROR_REQUEST.md API_TEAM_URGENT_REQUEST.md)",
+      "Read(//c/Users/hyesu/Desktop/dev/VSCODE/**)",
+      "Bash(mkdir:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(pm2 list:*)",
+      "Bash(pm2 restart:*)",
+      "Bash(powershell -Command \"cd ''C:\\Users\\hyesu\\Desktop\\dev\\VSCODE\\callup-admin''; pm2 restart callup-admin\")",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

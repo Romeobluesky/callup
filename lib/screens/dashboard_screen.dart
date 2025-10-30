@@ -821,9 +821,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           ),
-                          // 갯수
+                          // 갯수 (미사용/총갯수)
                           Text(
-                            '${dbItem['totalCount']}/${dbItem['unusedCount']}',
+                            '${dbItem['unusedCount']}/${dbItem['totalCount']}',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

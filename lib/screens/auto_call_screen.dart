@@ -34,6 +34,8 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   int _countdown = 5;
   String _progress = '0/0';
   List<Map<String, dynamic>> _customers = [];
+  int _totalCustomerCount = 0;  // 전체 고객 수 (처음 로드 시 저장)
+  int _processedCount = 0;  // 이미 처리된 고객 수 (API에서 받음)
 
   // Stream 구독
   StreamSubscription<AutoCallState>? _stateSubscription;
@@ -120,8 +122,10 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             break;
           case AutoCallStatus.callEnded:
             // 통화 종료 시 CallResultScreen으로 이동
-            _navigateToCallResult();
+            _callStatus = '통화종료';
+            _currentCustomer = state.customer;  // 통화 종료된 고객 정보 저장
             _isPaused = false;
+            _navigateToCallResult();
             break;
           case AutoCallStatus.paused:
             // 결과 등록 후 일시정지 - 다음 고객 정보 표시
@@ -144,7 +148,7 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             // idle 상태일 때 첫 번째 고객 정보 유지 (빈칸으로 만들지 않음)
             if (_customers.isNotEmpty && _currentCustomer == null) {
               _currentCustomer = _customers[0];
-              _progress = '1/${_customers.length}';
+              _progress = '1/$_totalCustomerCount';  // 전체 고객 수 사용
             }
             break;
         }
@@ -163,13 +167,16 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   void _navigateToCallResult() {
     if (_currentCustomer == null) return;
 
+    // customer 객체에서 통화 시간 추출 (기본값 0)
+    final callDuration = _currentCustomer!['callDuration'] ?? 0;
+
     Navigator.push(
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 200),
         pageBuilder: (context, animation, _) => CallResultScreen(
           customer: _currentCustomer!,
-          callDuration: 0,
+          callDuration: callDuration,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
@@ -245,10 +252,13 @@ class _AutoCallScreenState extends State<AutoCallScreen>
 
       if (result['success'] == true && result['customers'] != null) {
         final customers = result['customers'] as List;
+        final totalCount = result['totalCount'] ?? customers.length;
+        final processedCount = result['processedCount'] ?? 0;
 
         setState(() {
           _customers = customers.map((customer) => {
             'customerId': customer['customerId'],
+            'dbId': dbId,  // DB ID 추가
             'event': customer['eventName'] ?? '-',
             'phone': customer['phone'] ?? '-',
             'name': customer['name'] ?? '-',
@@ -257,9 +267,19 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             'info3': customer['info3'] ?? '-',
             'dataStatus': customer['dataStatus'] ?? '미사용',
           }).toList();
+
+          // 전체 고객 수 저장 (처음에만)
+          if (_totalCustomerCount == 0) {
+            _totalCustomerCount = totalCount;
+          }
+
+          // 처리된 고객 수 저장
+          _processedCount = processedCount;
         });
 
         debugPrint('고객 로드 완료: ${_customers.length}명');
+        debugPrint('전체 고객 수: $_totalCustomerCount명');
+        debugPrint('처리된 고객 수: $_processedCount명');
       } else if (result['requireLogin'] == true) {
         // JWT 토큰 만료 → 로그인 화면으로
         if (!mounted) return;
@@ -310,8 +330,12 @@ class _AutoCallScreenState extends State<AutoCallScreen>
       });
 
       // AutoCallService 시작
-      debugPrint('AutoCallService 시작');
-      await AutoCallService().start(_customers);
+      debugPrint('AutoCallService 시작 - totalCount: $_totalCustomerCount, processedCount: $_processedCount');
+      await AutoCallService().start(
+        _customers,
+        totalCount: _totalCustomerCount,
+        processedCount: _processedCount,
+      );
     } catch (e) {
       debugPrint('_startAutoCalling 에러: $e');
       if (mounted) {

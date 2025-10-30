@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/auto_call_state.dart';
+import 'db_manager.dart';
 import 'phone_service.dart';
 import 'overlay_service.dart';
 import 'api/auto_call_api_service.dart';
@@ -17,10 +18,13 @@ class AutoCallService {
   // 상태
   bool isRunning = false;
   List<Map<String, dynamic>> customerQueue = [];
-  int currentIndex = 0;
+  int currentIndex = 0;  // 큐 내부 인덱스 (항상 0부터 시작)
+  int totalCustomerCount = 0;  // 전체 배정받은 고객 수
+  int processedCount = 0;  // 실제 처리한 고객 수 (표시용, 5명 처리 후 재개 시 5)
   Timer? _countdownTimer;
   Completer<CallResult>? _callCompleter;
   Map<String, dynamic>? _connectedCustomer;  // 통화 연결된 고객 저장
+  DateTime? _callStartTime;  // 통화 시작 시간
 
   // Stream 컨트롤러
   final _stateController = StreamController<AutoCallState>.broadcast();
@@ -69,15 +73,31 @@ class AutoCallService {
           } else {
             // 카운트다운이 이미 완료된 후 통화 종료
             if (callDuration > 0 && _connectedCustomer != null) {
+              // 통화 시간 계산
+              final callEndTime = DateTime.now();
+              final actualCallDuration = _callStartTime != null
+                  ? callEndTime.difference(_callStartTime!).inSeconds
+                  : callDuration;
+
+              // 통화 시간을 customer 객체에 추가
+              final customerWithDuration = {
+                ..._connectedCustomer!,
+                'callDuration': actualCallDuration,
+              };
+
               // 통화 연결된 후 종료 → CallResultScreen으로 이동
               debugPrint('통화 종료 → CallResultScreen 전환 신호 발송');
               debugPrint('통화 종료된 고객: ${_connectedCustomer!['name']} (저장된 정보 사용)');
+              debugPrint('통화 시간: $actualCallDuration초');
+
               _stateController.add(AutoCallState(
                 status: AutoCallStatus.callEnded,
-                customer: _connectedCustomer!,  // 저장된 연결 고객 정보 사용
-                progress: '${currentIndex + 1}/${customerQueue.length}',
+                customer: customerWithDuration,  // 통화 시간이 포함된 고객 정보
+                progress: '${processedCount + 1}/$totalCustomerCount',
               ));
+
               _connectedCustomer = null;  // 사용 후 초기화
+              _callStartTime = null;  // 시작 시간 초기화
             } else {
               debugPrint('카운트다운 완료 후 무응답 종료 (이미 타임아웃 처리됨)');
             }
@@ -88,12 +108,26 @@ class AutoCallService {
   }
 
   /// 자동 전화 시작
-  Future<void> start(List<Map<String, dynamic>> customers) async {
+  Future<void> start(List<Map<String, dynamic>> customers, {int? totalCount, int? processedCount}) async {
     debugPrint('=== 자동 전화 시작 ===');
-    debugPrint('총 고객 수: ${customers.length}');
+    debugPrint('받은 고객 수: ${customers.length}');
+    debugPrint('전달받은 totalCount: $totalCount');
+    debugPrint('전달받은 processedCount: $processedCount');
+    debugPrint('현재 processedCount: ${this.processedCount}');
+    debugPrint('현재 totalCustomerCount: $totalCustomerCount');
 
     customerQueue = customers;
-    currentIndex = 0;
+    currentIndex = 0;  // 큐 인덱스는 항상 0부터 시작
+
+    // 전체 고객 수 저장 (처음 시작할 때만)
+    if (totalCustomerCount == 0) {
+      totalCustomerCount = totalCount ?? customers.length;
+      this.processedCount = processedCount ?? 0;
+      debugPrint('첫 시작 - totalCustomerCount: $totalCustomerCount, processedCount: ${this.processedCount}');
+    } else {
+      debugPrint('재개 - processedCount: ${this.processedCount}, totalCustomerCount: $totalCustomerCount 유지');
+    }
+
     isRunning = true;
 
     await _processNextCustomer();
@@ -113,9 +147,13 @@ class AutoCallService {
     }
 
     final customer = customerQueue[currentIndex];
-    final progress = '${currentIndex + 1}/${customerQueue.length}';
+    final progress = '${processedCount + 1}/$totalCustomerCount';
 
-    debugPrint('=== 고객 ${currentIndex + 1} 처리 시작 ===');
+    debugPrint('=== 고객 ${processedCount + 1} 처리 시작 ===');
+    debugPrint('currentIndex: $currentIndex (큐 내부)');
+    debugPrint('processedCount: $processedCount (실제 처리)');
+    debugPrint('totalCustomerCount: $totalCustomerCount (전체)');
+    debugPrint('progress: $progress');
     debugPrint('고객명: ${customer['name']}');
     debugPrint('전화번호: ${customer['phone']}');
 
@@ -156,16 +194,18 @@ class AutoCallService {
     // 카운트다운 완료 대기
     final result = await connectionFuture;
 
-    // 오버레이 숨기기
-    await OverlayService.hideOverlay();
-
     if (result == CallResult.connected) {
+      // 통화 연결됨 → 오버레이 숨기기
+      await OverlayService.hideOverlay();
+
       debugPrint('통화 연결됨 → CallResultScreen 대기');
 
       // 통화 연결된 고객 정보 저장 (아직 저장 안 되어 있을 수 있음)
       if (_connectedCustomer == null) {
         _connectedCustomer = customer;
+        _callStartTime = DateTime.now();  // 통화 시작 시간 기록
         debugPrint('통화 연결된 고객 저장: ${customer['name']}');
+        debugPrint('통화 시작 시간: $_callStartTime');
       }
 
       // 통화 연결 → CallResultScreen으로 이동
@@ -178,18 +218,22 @@ class AutoCallService {
     } else if (result == CallResult.timeout) {
       debugPrint('15초 타임아웃 → 전화 강제 종료 후 부재중 저장');
 
+      // 오버레이는 숨기지 않고 유지 (다음 고객으로 바로 전환)
+
       // 현재 통화 강제 종료
       await PhoneService.endCall();
-      await Future.delayed(const Duration(milliseconds: 800)); // Call Log 업데이트 대기 (안전 시간)
+      await Future.delayed(const Duration(milliseconds: 500)); // Call Log 업데이트 대기
 
       // 부재중 자동 저장
       await _saveAutoResult(customer, '부재중');
 
-      // 다음 고객으로
+      // 다음 고객으로 (오버레이는 _processNextCustomer에서 업데이트됨)
       currentIndex++;
+      processedCount++;  // 처리한 고객 수 증가
       await _processNextCustomer();
     } else {
-      // cancelled
+      // cancelled - 오버레이 숨기기
+      await OverlayService.hideOverlay();
       debugPrint('사용자가 중지함');
     }
   }
@@ -256,6 +300,7 @@ class AutoCallService {
 
     // 2. 다음 고객 정보 가져오기
     currentIndex++;  // 현재 고객 건너뛰고 다음으로
+    processedCount++;  // 처리한 고객 수 증가
     final nextCustomer = getCurrentCustomer();
 
     if (nextCustomer != null) {
@@ -263,9 +308,9 @@ class AutoCallService {
       _stateController.add(AutoCallState(
         status: AutoCallStatus.paused,
         customer: nextCustomer,
-        progress: '${currentIndex + 1}/${customerQueue.length}',
+        progress: '${processedCount + 1}/$totalCustomerCount',
       ));
-      debugPrint('일시정지: 다음 고객 정보 표시 (${currentIndex + 1}/${customerQueue.length})');
+      debugPrint('일시정지: 다음 고객 정보 표시 (${processedCount + 1}/$totalCustomerCount)');
     } else {
       // 4. 더 이상 고객이 없으면 완전 중지
       stop();
@@ -296,15 +341,16 @@ class AutoCallService {
     }
 
     currentIndex++;
+    processedCount++;  // 처리한 고객 수 증가
 
     // 다음 고객 정보가 있으면 paused 상태로 전환 (AutoCallScreen에 다음 고객 표시)
     final nextCustomer = getCurrentCustomer();
     if (nextCustomer != null) {
-      debugPrint('다음 고객 정보 표시 (일시정지 상태)');
+      debugPrint('다음 고객 정보 표시 (일시정지 상태): ${processedCount + 1}/$totalCustomerCount');
       _stateController.add(AutoCallState(
         status: AutoCallStatus.paused,
         customer: nextCustomer,
-        progress: '${currentIndex + 1}/${customerQueue.length}',
+        progress: '${processedCount + 1}/$totalCustomerCount',
       ));
     } else {
       // 다음 고객이 없으면 완료
@@ -328,15 +374,23 @@ class AutoCallService {
   /// 자동 부재중 저장
   Future<void> _saveAutoResult(Map<String, dynamic> customer, String result) async {
     debugPrint('자동 저장: ${customer['name']} - $result');
+    debugPrint('고객 데이터: $customer');
 
     try {
       final customerId = customer['customerId'];
-      final dbId = customer['dbId'];
+      final dbId = DBManager().selectedDB?['dbId'] ?? DBManager().selectedDB?['id'];
 
-      if (customerId == null || dbId == null) {
-        debugPrint('고객 ID 또는 DB ID가 없어 자동 저장 불가');
+      if (customerId == null) {
+        debugPrint('❌ 고객 ID가 없어 자동 저장 불가');
         return;
       }
+
+      if (dbId == null) {
+        debugPrint('❌ DB ID가 없어 자동 저장 불가');
+        return;
+      }
+
+      debugPrint('API 호출: customerId=$customerId, dbId=$dbId, result=$result');
 
       // API로 부재중 결과 저장
       final apiResult = await AutoCallApiService.saveAutoCallLog(
@@ -348,12 +402,12 @@ class AutoCallService {
       );
 
       if (apiResult['success'] == true) {
-        debugPrint('자동 저장 성공: ${customer['name']} - $result');
+        debugPrint('✅ 자동 저장 성공: ${customer['name']} - $result');
       } else {
-        debugPrint('자동 저장 실패: ${apiResult['message']}');
+        debugPrint('❌ 자동 저장 실패: ${apiResult['message']}');
       }
     } catch (e) {
-      debugPrint('자동 저장 오류: $e');
+      debugPrint('❌ 자동 저장 오류: $e');
     }
   }
 

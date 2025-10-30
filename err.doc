@@ -1,0 +1,307 @@
+20 fn= 37 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9074b10 mBlastBufferQueue=0xb40000788920df20 fn= 38 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b90730d0 mBlastBufferQueue=0xb40000788920df20 fn= 39 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9074cd0 mBlastBufferQueue=0xb40000788920df20 fn= 40 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9071310 mBlastBufferQueue=0xb40000788920df20 fn= 41 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9071f50 mBlastBufferQueue=0xb40000788920df20 fn= 42 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9075590 mBlastBufferQueue=0xb40000788920df20 fn= 43 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9063690 mBlastBufferQueue=0xb40000788920df20 fn= 44 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/flutter ( 2737): === API POST 요청 ===
+I/flutter ( 2737): URL: https://api.autocallup.com/api/auth/login
+I/flutter ( 2737): Body: {"companyLoginId":"admin","companyPassword":"ujin1436","userName":"김상 담"}
+I/flutter ( 2737): Headers: {Content-Type: application/json, Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImNvbXBhbnlJZCI6MiwiY29tcGFueUxvZ2luSWQiOiJhZG1pbiIsInVzZXJOYW1lIjoi6rmA7IOB64u0Iiwicm9sZSI6ImFnZW50IiwiaWF0IjoxNzYxODE2NjA3LCJleHAiOjE3NjI0MjE0MDd9.sCRt46UPVLzVPlbBa-ewtjXU3RaRfXZT1JLe-ByMZ4c}
+W/WindowOnBackDispatcher( 2737): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 2737): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9097250 mBlastBufferQueue=0xb40000788920df20 fn= 45 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9063bd0 mBlastBufferQueue=0xb40000788920df20 fn= 46 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9062510 mBlastBufferQueue=0xb40000788920df20 fn= 47 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b906d090 mBlastBufferQueue=0xb40000788920df20 fn= 48 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9081d10 mBlastBufferQueue=0xb40000788920df20 fn= 49 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9095810 mBlastBufferQueue=0xb40000788920df20 fn= 50 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9073b50 mBlastBufferQueue=0xb40000788920df20 fn= 51 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9051090 mBlastBufferQueue=0xb40000788920df20 fn= 52 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9071bd0 mBlastBufferQueue=0xb40000788920df20 fn= 53 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b90722d0 mBlastBufferQueue=0xb40000788920df20 fn= 54 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9073990 mBlastBufferQueue=0xb40000788920df20 fn= 55 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b906e910 mBlastBufferQueue=0xb40000788920df20 fn= 56 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/flutter ( 2737): === API 응답 ===
+I/flutter ( 2737): Status: 200
+I/flutter ( 2737): Body: {"success":true,"data":{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImNvbXBhbnlJZCI6MiwiY29tcGFueUxvZ2luSWQiOiJhZG1pbiIsInVzZXJOYW1lIjoi6rmA7IOB64u0Iiwicm9sZSI6ImFnZW50IiwiaWF0IjoxNzYxODE2ODE3LCJleHAiOjE3NjI0MjE2MTd9.b1jcCKXCYHwRsSFNHjjg5AedPb1Clj_AQgyKJZYw0ps","user":{"userId":2,"userName":"김상담","userPhone":"010-2345-6789","userStatusMessage":"오토콜이 잘되길 바랍니다","isActive":1,"lastLoginAt":"2025-10-30T09:33:37.195Z"},"company":{"companyId":2,"companyLoginId":"admin","companyName":"(주)CallUp","maxAgents":999,"isActive":1}},"message":"로그인 성공"}
+I/InsetsController( 2737): cancelAnimation: types=ime, animType=1, host=com.callup.callup/com.callup.callup.MainActivity, from=android.view.InsetsController.notifyFinished:2006 android.view.InsetsAnimationControlImpl.applyChangeInsets:335 android.view.InsetsController.lambda$new$3:957      
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b909f910 mBlastBufferQueue=0xb40000788920df20 fn= 57 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SyncRtSurfaceTransactionApplier.applyTransaction:100 android.view.SyncRtSurfaceTransactionApplier.lambda$scheduleApply$0:73 android.view.SyncRtSurfaceTransactionApplier.$r8$lambda$afI4fXg3U3-nBZQEDQMiNy-B06s:0
+I/InsetsController( 2737): onStateChanged: host=com.callup.callup/com.callup.callup.MainActivity, from=android.view.ViewRootImpl.onInsetsStateChanged:3026, state=InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2640), mDisplayCutout=DisplayCutout{insets=Rect(0, 94 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(505, 0 - 576, 94), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2640 physicalDisplayWidth=1080 physicalDisplayHeight=2640 density={3.0} cutoutSpec={M 0,0 H -11.83333333333333 V 31.33333333333333 H 11.83333333333333 V 0 H 0 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}} sideOverrides={}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=114, center=Point(114, 114)}, RoundedCorner{position=TopRight, radius=114, center=Point(966, 114)}, RoundedCorner{position=BottomRight, radius=114, center=Point(966, 2526)}, RoundedCorner{position=BottomLeft, radius=114, center=Point(114, 2526)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2640), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(948, 0 - 1080, 94) rotation=0}, mDisplayShape=DisplayShape{ spec=1406003047 displayWidth=1080 displayHeight=2640 physicalPixelDisplaySizeRatio=1.0 rotation=0 offsetX=0 offsetY=0 scale=1.0}, mSources= { InsetsSource: {e3cf0001 mType=navigationBars mFrame=[0,2595][1080,2640] mVisible=true mFlags=SUPPRESS_SCRIM mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {e3cf0004 mType=systemGestures mFrame=[0,0][90,2640] mVisible=true mFlags= mSideHint=LEFT mBoundingRects=null}, InsetsSource: {e3cf0005 mType=mandatorySystemGestures mFrame=[0,2544][1080,2640] mVisible=true mFlags= mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {e3cf0006 mType=tappableElement mFrame=[0,0][0,0] mVisible=true mFlags= mSideHint=NONE mBoundingRects=null}, InsetsSource: {e3cf0024 mType=systemGestures mFrame=[990,0][1080,2640] mVisible=true mFlags= mSideHint=RIGHT mBoundingRects=null}, InsetsSource: {3 mType=ime mFrame=[0,1640][1080,2640] mVisible=false mFlags= mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {27 mType=displayCutout mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0000 mType=statusBars mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0005 mType=mandatorySystemGestures mFrame=[0,0][1080,130] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0006 mType=tappableElement mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null} }
+I/VRI[MainActivity]@de6e37f( 2737): handleResized, frames=ClientWindowFrames{frame=[0,0][1080,2640] display=[0,0][1080,2640] parentFrame=[0,0][0,0]} displayId=0 dragResizing=false compatScale=1.0 frameChanged=false attachedFrameChanged=false configChanged=false displayChanged=false compatScaleChanged=false dragResizingChanged=false
+I/InsetsSourceConsumer( 2737): applyRequestedVisibilityToControl: visible=true, type=navigationBars, host=com.callup.callup/com.callup.callup.MainActivity
+I/ImeTracker( 2737): system_server:2da73bcd: onCancelled at PHASE_CLIENT_ON_CONTROLS_CHANGED     
+W/WindowOnBackDispatcher( 2737): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 2737): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/flutter ( 2737): === API GET 요청 ===
+I/flutter ( 2737): URL: https://api.autocallup.com/api/dashboard
+I/flutter ( 2737): Headers: {Content-Type: application/json, Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImNvbXBhbnlJZCI6MiwiY29tcGFueUxvZ2luSWQiOiJhZG1pbiIsInVzZXJOYW1lIjoi6rmA7IOB64u0Iiwicm9sZSI6ImFnZW50IiwiaWF0IjoxNzYxODE2ODE3LCJleHAiOjE3NjI0MjE2MTd9.b1jcCKXCYHwRsSFNHjjg5AedPb1Clj_AQgyKJZYw0ps}
+I/flutter ( 2737): === API 응답 ===
+I/flutter ( 2737): Status: 200
+I/flutter ( 2737): Body: {"success":true,"data":{"user":{"userId":2,"userName":"김상담","userPhone":"010-2345-6789","userStatusMessage":"오토콜이 잘되길 바랍니다","isActive":1,"lastActiveTime":"2025-10-30T09:33:37.000Z"},"todayStats":{"callCount":0,"callDuration":"00:00:00"},"callResults":{"connected":0,"failed":0,"callback":0},"dbLists":[{"dbId":4,"date":"2025-10-24T15:00:00.000Z","title":"테스트db_부평구_251025","totalCount":8,"unusedCount":3},{"dbId":1,"date":"2025-10-13T15:00:00.000Z","title":"테스트01_인천","totalCount":1,"unusedCount":1}]}}
+I/InsetsController( 2737): onStateChanged: host=com.callup.callup/com.callup.callup.MainActivity, from=android.view.ViewRootImpl.onInsetsStateChanged:3026, state=InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2640), mDisplayCutout=DisplayCutout{insets=Rect(0, 94 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(505, 0 - 576, 94), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2640 physicalDisplayWidth=1080 physicalDisplayHeight=2640 density={3.0} cutoutSpec={M 0,0 H -11.83333333333333 V 31.33333333333333 H 11.83333333333333 V 0 H 0 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}} sideOverrides={}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=114, center=Point(114, 114)}, RoundedCorner{position=TopRight, radius=114, center=Point(966, 114)}, RoundedCorner{position=BottomRight, radius=114, center=Point(966, 2526)}, RoundedCorner{position=BottomLeft, radius=114, center=Point(114, 2526)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2640), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(948, 0 - 1080, 94) rotation=0}, mDisplayShape=DisplayShape{ spec=1406003047 displayWidth=1080 displayHeight=2640 physicalPixelDisplaySizeRatio=1.0 rotation=0 offsetX=0 offsetY=0 scale=1.0}, mSources= { InsetsSource: {e3cf0001 mType=navigationBars mFrame=[0,2595][1080,2640] mVisible=true mFlags=SUPPRESS_SCRIM mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {e3cf0004 mType=systemGestures mFrame=[0,0][90,2640] mVisible=true mFlags= mSideHint=LEFT mBoundingRects=null}, InsetsSource: {e3cf0005 mType=mandatorySystemGestures mFrame=[0,2544][1080,2640] mVisible=true mFlags= mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {e3cf0006 mType=tappableElement mFrame=[0,0][0,0] mVisible=true mFlags= mSideHint=NONE mBoundingRects=null}, InsetsSource: {e3cf0024 mType=systemGestures mFrame=[990,0][1080,2640] mVisible=true mFlags= mSideHint=RIGHT mBoundingRects=null}, InsetsSource: {3 mType=ime mFrame=[0,0][0,0] mVisible=false mFlags= mSideHint=NONE mBoundingRects=null}, InsetsSource: {27 mType=displayCutout mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0000 mType=statusBars mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0005 mType=mandatorySystemGestures mFrame=[0,0][1080,130] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0006 mType=tappableElement mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null} }
+I/VRI[MainActivity]@de6e37f( 2737): handleResized, frames=ClientWindowFrames{frame=[0,0][1080,2640] display=[0,0][1080,2640] parentFrame=[0,0][0,0]} displayId=0 dragResizing=false compatScale=1.0 frameChanged=false attachedFrameChanged=false configChanged=false displayChanged=false compatScaleChanged=false dragResizingChanged=false
+I/VRI[MainActivity]@de6e37f( 2737): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@de6e37f
+I/VRI[MainActivity]@de6e37f( 2737): call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[MainActivity]@de6e37f
+I/flutter ( 2737): === DB 선택됨 ===
+I/flutter ( 2737): 파일명: null
+I/flutter ( 2737): 제목: 테스트db_부평구_251025
+I/flutter ( 2737): 전체: null명
+I/flutter ( 2737): === DB 로드 시작 (API) ===
+I/flutter ( 2737): DB ID: 4
+I/flutter ( 2737): 제목: 테스트db_부평구_251025
+I/flutter ( 2737): === API POST 요청 ===
+I/flutter ( 2737): URL: https://api.autocallup.com/api/auto-call/start
+I/flutter ( 2737): Body: {"dbId":4,"count":100}
+I/flutter ( 2737): Headers: {Content-Type: application/json, Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImNvbXBhbnlJZCI6MiwiY29tcGFueUxvZ2luSWQiOiJhZG1pbiIsInVzZXJOYW1lIjoi6rmA7IOB64u0Iiwicm9sZSI6ImFnZW50IiwiaWF0IjoxNzYxODE2ODE3LCJleHAiOjE3NjI0MjE2MTd9.b1jcCKXCYHwRsSFNHjjg5AedPb1Clj_AQgyKJZYw0ps}
+D/PhoneState( 2737): 통화 상태 모니터링 시작됨
+I/flutter ( 2737): 네이티브 통화 상태 모니터링 시작
+W/WindowOnBackDispatcher( 2737): OnBackInvokedCallback is not enabled for the application.       
+W/WindowOnBackDispatcher( 2737): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/PhoneState( 2737): 기본 통화 상태 변경: 0
+D/PhoneState( 2737): CALL_STATE_IDLE (통화 없음)
+D/CallLog ( 2737): 가장 최근 발신 통화 시간: 0초
+D/PhoneState( 2737): Call Log 조회: 0초 (Fallback)
+D/PhoneState( 2737): 최종 통화 시간: 0초
+I/flutter ( 2737): === 기본 통화 상태: IDLE (통화시간: 0초) ===
+I/flutter ( 2737): === 네이티브 통화 상태: IDLE (통화시간: 0초) ===
+I/flutter ( 2737): 통화 종료됨 (IDLE) - 통화시간: 0초
+I/flutter ( 2737): 카운트다운 완료 후 무응답 종료 (이미 타임아웃 처리됨)
+I/flutter ( 2737): === API 응답 ===
+I/flutter ( 2737): Status: 200
+I/flutter ( 2737): Body: {"success":true,"data":{"customers":[{"customerId":9,"dbId":4,"name":"김옥순","phone":"070-8666-1427","info1":"인천 부평","info2":"테스트06","info3":"#2006","eventName":"테스트db_부평구_251025","dataStatus":"미사용"},{"customerId":10,"dbId":4,"name":"최경미","phone":"070-8666-1428","info1":"인천 부평","info2":"테스트07","info3":"#2007","eventName":"테스트db_부 평구_251025","dataStatus":"미사용"},{"customerId":11,"dbId":4,"name":"이이경","phone":"010-7925-1707","info1":"인천 부평","info2":"테스트08","info3":"#2008","eventName":"테스트db_부평구_251025","dataStatus":"미사용"}],"totalCount":8},"message":"고객 큐 조회 성공"}
+I/flutter ( 2737): 고객 로드 완료: 3명
+I/flutter ( 2737): 전체 고객 수: 8명
+I/VRI[MainActivity]@de6e37f( 2737): call setFrameRateCategory for touch hint category=no preference, reason=boost timeout, vri=VRI[MainActivity]@de6e37f
+I/VRI[MainActivity]@de6e37f( 2737): call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[MainActivity]@de6e37f
+I/flutter ( 2737): 고객 데이터 로드 완료: 3명
+I/flutter ( 2737): AutoCallService 시작 - totalCount: 8
+I/flutter ( 2737): === 자동 전화 시작 ===
+I/flutter ( 2737): 받은 고객 수: 3
+I/flutter ( 2737): 전달받은 totalCount: 8
+I/flutter ( 2737): 현재 processedCount: 0
+I/flutter ( 2737): 현재 totalCustomerCount: 0
+I/flutter ( 2737): 첫 시작 - totalCustomerCount: 8
+I/flutter ( 2737): === 고객 1 처리 시작 ===
+I/flutter ( 2737): currentIndex: 0 (큐 내부)
+I/flutter ( 2737): processedCount: 0 (실제 처리)
+I/flutter ( 2737): totalCustomerCount: 8 (전체)
+I/flutter ( 2737): progress: 1/8
+I/flutter ( 2737): 고객명: 김옥순
+I/flutter ( 2737): 전화번호: 070-8666-1427
+I/flutter ( 2737): 15초 카운트다운 시작
+I/WindowManager( 2737): WindowManagerGlobal#addView, ty=2038, view=com.callup.callup.OverlayView{58a65c6 V.E...... ......I. 0,0-0,0}, caller=android.view.WindowManagerImpl.addView:158 com.callup.callup.OverlayService.showOverlay:113 com.callup.callup.OverlayService.onStartCommand:58        
+I/ViewRootImpl( 2737): dVRR is disabled
+D/NativeCustomFrequencyManager( 2737): [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+D/InputTransport( 2737): Input channel constructed: '135d7eb', fd=194
+I/InsetsController( 2737): onStateChanged: host=, from=android.view.ViewRootImpl.onInsetsStateChanged:3026, state=InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2640), mDisplayCutout=DisplayCutout{insets=Rect(0, 94 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(505, 0 - 576, 94), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2640 physicalDisplayWidth=1080 physicalDisplayHeight=2640 density={3.0} cutoutSpec={M 0,0 H -11.83333333333333 V 31.33333333333333 H 11.83333333333333 V 0 H 0 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}} sideOverrides={}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=114, center=Point(114, 114)}, RoundedCorner{position=TopRight, radius=114, center=Point(966, 114)}, RoundedCorner{position=BottomRight, radius=114, center=Point(966, 2526)}, RoundedCorner{position=BottomLeft, radius=114, center=Point(114, 2526)}]}  mRoundedCornerFrame=Rect(0, 0 - 0, 0), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(948, 0 - 1080, 94) rotation=0}, mDisplayShape=DisplayShape{ spec=1406003047 displayWidth=1080 displayHeight=2640 physicalPixelDisplaySizeRatio=1.0 rotation=0 offsetX=0 offsetY=0 scale=1.0}, mSources= { InsetsSource: {e3cf0001 mType=navigationBars mFrame=[0,2595][1080,2640] mVisible=true mFlags=SUPPRESS_SCRIM mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {e3cf0004 mType=systemGestures mFrame=[0,0][90,2640] mVisible=true mFlags= mSideHint=LEFT mBoundingRects=null}, InsetsSource: {e3cf0005 mType=mandatorySystemGestures mFrame=[0,2544][1080,2640] mVisible=true mFlags= mSideHint=BOTTOM mBoundingRects=null}, InsetsSource: {e3cf0006 mType=tappableElement mFrame=[0,0][0,0] mVisible=true mFlags= mSideHint=NONE mBoundingRects=null}, InsetsSource: {e3cf0024 mType=systemGestures mFrame=[990,0][1080,2640] mVisible=true mFlags= mSideHint=RIGHT mBoundingRects=null}, InsetsSource: {27 mType=displayCutout mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0000 mType=statusBars mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0005 mType=mandatorySystemGestures mFrame=[0,0][1080,130] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null}, InsetsSource: {5e2c0006 mType=tappableElement mFrame=[0,0][1080,94] mVisible=true mFlags= mSideHint=TOP mBoundingRects=null} }
+I/VRI[]@413d987( 2737): synced displayState. AttachInfo displayState=2
+I/VRI[]@413d987( 2737): setView = com.callup.callup.OverlayView@58a65c6 IsHRR=false mFlingFrameRateChange=0 TM=true
+D/OverlayService( 2737): 오버레이 표시 성공
+I/flutter ( 2737): 백그라운드 전화 걸기 시도: 07086661427
+D/HWUI    ( 2737): HWUI - treat SMPTE_170M as sRGB
+W/libc    ( 2737): Access denied finding property "vendor.display.enable_optimal_refresh_rate"   
+I/BufferQueueProducer( 2737): [](id:ab100000005,api:0,p:-385666256,c:2737) setDequeueTimeout:2077252342
+I/BLASTBufferQueue_Java( 2737): new BLASTBufferQueue, mName= VRI[]@413d987 mNativeObject= 0xb400007889173580 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:3585 android.view.ViewRootImpl.relayoutWindow:11685 android.view.ViewRootImpl.performTraversals:4804 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901 android.view.Choreographer$CallbackRecord.run:1910 android.view.Choreographer.doCallbacks:1367 android.view.Choreographer.doFrame:1292 android.view.Choreographer$FrameDisplayEventReceiver.run:1870
+I/BLASTBufferQueue_Java( 2737): update, w= 1052 h= 1955 mName = VRI[]@413d987 mNativeObject= 0xb400007889173580 sc.mNativeObject= 0xb4000078f90603d0 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:3590 android.view.ViewRootImpl.relayoutWindow:11685 android.view.ViewRootImpl.performTraversals:4804 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901
+W/libc    ( 2737): Access denied finding property "vendor.display.enable_optimal_refresh_rate"   
+I/VRI[]@413d987( 2737): Relayout returned: old=(54,360,1026,2235) new=(54,360,1026,2235) relayoutAsync=false req=(972,1875)0 dur=3 res=0x3 s={true 0xb4000078a90c79f0} ch=true seqId=0
+I/VRI[]@413d987( 2737): performConfigurationChange setNightDimText nightDimLevel=0
+D/VRI[]@413d987( 2737): mThreadedRenderer.initialize() mSurface={isValid=true 0xb4000078a90c79f0} hwInitialized=true
+D/VRI[]@413d987( 2737): reportNextDraw android.view.ViewRootImpl.performTraversals:5443 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901 android.view.Choreographer$CallbackRecord.run:1910     
+D/VRI[]@413d987( 2737): Setup new sync=wmsSync-VRI[]@413d987#9
+I/VRI[]@413d987( 2737): Creating new active sync group VRI[]@413d987#10
+D/VRI[]@413d987( 2737): registerCallbacksForSync syncBuffer=false
+D/VRI[]@413d987( 2737): Received frameDrawingCallback syncResult=0 frameNum=1.
+I/VRI[]@413d987( 2737): mWNT: t=0xb4000077b9079650 mBlastBufferQueue=0xb400007889173580 fn= 1 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$12.onFrameDraw:15441 android.view.ThreadedRenderer$1.onFrameDraw:718 <bottom of call stack>
+I/VRI[]@413d987( 2737): Setting up sync and frameCommitCallback
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+I/BLASTBufferQueue( 2737): [VRI[]@413d987#5](f:0,a:0,s:0) onFrameAvailable the first frame is available
+I/SurfaceComposerClient( 2737): apply transaction with the first frame. layerId: 94371, bufferData(ID: 11755325489197, frameNumber: 1)
+I/VRI[]@413d987( 2737): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+D/HWUI    ( 2737): CFMS:: SetUp Pid : 2737    Tid : 2762
+D/VRI[]@413d987( 2737): reportDrawFinished seqId=0
+V/IntentSender( 2737): Sending intent Intent { act=android.intent.action.CALL dat=tel:xxxxxxxxxxx (has extras) }
+I/flutter ( 2737): 백그라운드 전화 걸기 성공
+I/ImeFocusController( 2737): onPreWindowFocus: skipped hasWindowFocus=false mHasImeFocus=true
+I/ImeFocusController( 2737): onPostWindowFocus: skipped hasWindowFocus=false mHasImeFocus=true
+I/BLASTBufferQueue_Java( 2737): update, w= 1080 h= 2640 mName = VRI[MainActivity]@de6e37f mNativeObject= 0xb40000788920df20 sc.mNativeObject= 0xb4000078f904d290 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:3574 android.view.ViewRootImpl.relayoutWindow:11685 android.view.ViewRootImpl.performTraversals:4804 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901    
+I/VRI[MainActivity]@de6e37f( 2737): Relayout returned: old=(0,0,1080,2640) new=(0,0,1080,2640) relayoutAsync=true req=(1080,2640)0 dur=0 res=0x0 s={true 0xb4000078a91323e0} ch=false seqId=0     
+I/VRI[MainActivity]@de6e37f( 2737): updateBoundsLayer: t=android.view.SurfaceControl$Transaction@87a23f3 sc=Surface(name=Bounds for - com.callup.callup/com.callup.callup.MainActivity@1)/@0x827b79b frame=58
+I/VRI[MainActivity]@de6e37f( 2737): registerCallbackForPendingTransactions
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b90bb750 mBlastBufferQueue=0xb40000788920df20 fn= 58 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$10.onFrameDraw:6536 android.view.ViewRootImpl$4.onFrameDraw:2489 android.view.ThreadedRenderer$1.onFrameDraw:718
+
+D/VRI[MainActivity]@de6e37f( 2737): mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb4000078a91323e0}
+I/InputMethodManager( 2737): startInputAsyncOnWindowFocusGain - IInputMethodManagerGlobalInvoker.startInputOrWindowGainedFocus
+D/PhoneState( 2737): 기본 통화 상태 변경: 2
+D/PhoneState( 2737): CALL_STATE_OFFHOOK (전화 걸기 시작)
+D/PhoneState( 2737): 통화 시작 시각 저장: 1761816687008
+I/flutter ( 2737): === 기본 통화 상태: OFFHOOK (통화시간: 0초) ===
+I/flutter ( 2737): === 네이티브 통화 상태: OFFHOOK (통화시간: 0초) ===
+I/flutter ( 2737): OFFHOOK 감지 (전화 걸기 시작)
+D/PhoneState( 2737): 기본 통화 상태 변경: 2
+D/PhoneState( 2737): CALL_STATE_OFFHOOK (통화 유지 중)
+I/ImeFocusController( 2737): onPreWindowFocus: skipped hasWindowFocus=false mHasImeFocus=true
+I/ImeFocusController( 2737): onPostWindowFocus: skipped hasWindowFocus=false mHasImeFocus=true
+I/flutter ( 2737): 카운트다운: 14초
+D/InputTransport( 2737): Input channel destroyed: 'ClientS', fd=160
+I/VRI[MainActivity]@de6e37f( 2737): handleAppVisibility mAppVisible = true visible = false
+D/VRI[MainActivity]@de6e37f( 2737): visibilityChanged oldVisibility=true newVisibility=false
+I/SV[181869444 MainActivity]( 2737): onWindowVisibilityChanged(8) false io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ........ 0,0-1080,2595} of VRI[MainActivity]@de6e37f    
+I/SurfaceView( 2737): 181869444 Changes: creating=false format=false size=false visible=true alpha=false hint=false left=false top=false z=false attached=true lifecycleStrategy=false
+I/SurfaceView( 2737): 181869444 Cur surface: Surface(name=null mNativeObject=-5476376628650675984)/@0x86b875
+D/SurfaceComposerClient( 2737): setCornerRadius ## ad71b84 SurfaceView[com.callup.callup/com.callup.callup.MainActivity]@0#94355 cornerRadius=0.000000
+I/SurfaceView( 2737): 181869444 surfaceDestroyed
+I/SV[181869444 MainActivity]( 2737): surfaceDestroyed callback.size 1 #2 io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ........ 0,0-1080,2595}
+I/SV[181869444 MainActivity]( 2737): updateSurface: mVisible = false mSurface.isValid() = true
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f
+V/SurfaceView( 2737): Layout: x=0 y=0 w=1080 h=2595, frame=Rect(0, 0 - 1080, 2595)
+D/SurfaceView( 2737): 213922423 windowPositionLost, frameNr = 0
+I/VRI[MainActivity]@de6e37f( 2737): Relayout returned: old=(0,0,1080,2640) new=(0,0,1080,2640) relayoutAsync=false req=(1080,2640)8 dur=2 res=0x2 s={false 0x0} ch=true seqId=0
+I/SV[181869444 MainActivity]( 2737): windowStopped(true) false io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ........ 0,0-1080,2595} of VRI[MainActivity]@de6e37f
+D/SV[181869444 MainActivity]( 2737): updateSurface: surface is not valid
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f       
+D/VRI[MainActivity]@de6e37f( 2737): applyTransactionOnDraw applyImmediately
+D/SV[181869444 MainActivity]( 2737): updateSurface: surface is not valid
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f       
+D/VRI[MainActivity]@de6e37f( 2737): applyTransactionOnDraw applyImmediately
+D/VRI[MainActivity]@de6e37f( 2737): Not drawing due to not visible. Reason=!mAppVisible && !mForceDecorViewVisibility
+D/VRI[MainActivity]@de6e37f( 2737): Pending transaction will not be applied in sync with a draw due to view not visible
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9063f50 mBlastBufferQueue=0xnull fn= 0 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl.handleSyncRequestWhenNoAsyncDraw:6733 android.view.ViewRootImpl.performTraversals:5504 android.view.ViewRootImpl.doTraversal:3924
+I/VRI[MainActivity]@de6e37f( 2737): stopped(true) old = false
+D/VRI[MainActivity]@de6e37f( 2737): WindowStopped on com.callup.callup/com.callup.callup.MainActivity set to true
+I/AutofillManager( 2737): onInvisibleForAutofill(): expiringResponse
+D/SV[181869444 MainActivity]( 2737): updateSurface: surface is not valid
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f       
+D/VRI[MainActivity]@de6e37f( 2737): applyTransactionOnDraw applyImmediately
+D/SV[181869444 MainActivity]( 2737): updateSurface: surface is not valid
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f       
+D/VRI[MainActivity]@de6e37f( 2737): applyTransactionOnDraw applyImmediately
+D/BBA2    ( 2737): setIsFg isFg = false; delayValue 3999ms
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+I/flutter ( 2737): 카운트다운: 13초
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+I/flutter ( 2737): 카운트다운: 12초
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+I/flutter ( 2737): 카운트다운: 11초
+I/flutter ( 2737): 카운트다운: 10초
+I/flutter ( 2737): 카운트다운: 9초
+I/VRI[]@413d987( 2737): call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[]@413d987
+D/Choreographer( 2737): BBA2 receive callback when in bg : 0
+I/flutter ( 2737): 일시정지 알림 받음 (일시정지 버튼)
+I/WindowManager( 2737): WindowManagerGlobal#removeView, ty=2038, view=com.callup.callup.OverlayView{58a65c6 V.E...... ........ 0,0-972,1875}, caller=android.view.WindowManagerGlobal.removeView:654 android.view.WindowManagerImpl.removeView:211 com.callup.callup.OverlayService.hideOverlay:135
+
+D/HWUI    ( 2737): CacheManager::trimMemory(20)
+D/MainActivity( 2737): 통화 종료 결과: true
+I/flutter ( 2737): 통화 종료 요청 완료
+I/flutter ( 2737): 일시정지: 전화 강제 종료
+I/flutter ( 2737): 일시정지: 다음 고객 정보 표시 (2/8)
+W/WindowOnBackDispatcher( 2737): sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda16@3b71852
+I/VRI[]@413d987( 2737): dispatchDetachedFromWindow
+D/InputTransport( 2737): Input channel destroyed: '135d7eb', fd=194
+D/OverlayService( 2737): onDestroy: 서비스 종료됨
+I/flutter ( 2737): 사용자가 중지함
+D/HWUI    ( 2737): CacheManager::trimMemory(20)
+D/OverlayService( 2737): onDestroy: 서비스 종료됨
+D/PhoneState( 2737): 기본 통화 상태 변경: 0
+D/PhoneState( 2737): CALL_STATE_IDLE (통화 없음)
+D/PhoneState( 2737): 경과 시간 계산: 6초 (OFFHOOK 기준)
+D/PhoneState( 2737): 최종 통화 시간: 6초
+I/flutter ( 2737): === 기본 통화 상태: IDLE (통화시간: 6초) ===
+I/flutter ( 2737): === 네이티브 통화 상태: IDLE (통화시간: 6초) ===
+I/flutter ( 2737): 통화 종료됨 (IDLE) - 통화시간: 6초
+I/flutter ( 2737): 카운트다운 완료 후 무응답 종료 (이미 타임아웃 처리됨)
+D/PhoneState( 2737): 기본 통화 상태 변경: 0
+D/PhoneState( 2737): CALL_STATE_IDLE (통화 없음)
+D/CallLog ( 2737): 가장 최근 발신 통화 시간: 0초
+D/PhoneState( 2737): Call Log 조회: 0초 (Fallback)
+D/PhoneState( 2737): 최종 통화 시간: 0초
+I/flutter ( 2737): === 기본 통화 상태: IDLE (통화시간: 0초) ===
+I/flutter ( 2737): === 네이티브 통화 상태: IDLE (통화시간: 0초) ===
+I/flutter ( 2737): 통화 종료됨 (IDLE) - 통화시간: 0초
+I/flutter ( 2737): 카운트다운 완료 후 무응답 종료 (이미 타임아웃 처리됨)
+I/VRI[MainActivity]@de6e37f( 2737): handleAppVisibility mAppVisible = false visible = true
+I/VRI[MainActivity]@de6e37f( 2737): stopped(false) old = true
+D/VRI[MainActivity]@de6e37f( 2737): WindowStopped on com.callup.callup/com.callup.callup.MainActivity set to false
+D/ViewRootImpl( 2737): Skipping stats log for color mode
+D/SV[181869444 MainActivity]( 2737): updateSurface: surface is not valid
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f       
+D/VRI[MainActivity]@de6e37f( 2737): applyTransactionOnDraw applyImmediately
+I/SV[181869444 MainActivity]( 2737): onWindowVisibilityChanged(0) false io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ......ID 0,0-1080,2595} of VRI[MainActivity]@de6e37f    
+D/SV[181869444 MainActivity]( 2737): updateSurface: surface is not valid
+I/SV[181869444 MainActivity]( 2737): releaseSurfaces: viewRoot = VRI[MainActivity]@de6e37f       
+D/VRI[MainActivity]@de6e37f( 2737): applyTransactionOnDraw applyImmediately
+W/libc    ( 2737): Access denied finding property "vendor.display.enable_optimal_refresh_rate"   
+I/BufferQueueProducer( 2737): [](id:ab100000006,api:0,p:-385542704,c:2737) setDequeueTimeout:2077252342
+I/BLASTBufferQueue_Java( 2737): new BLASTBufferQueue, mName= VRI[MainActivity]@de6e37f mNativeObject= 0xb400007889173580 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:3585 android.view.ViewRootImpl.relayoutWindow:11685 android.view.ViewRootImpl.performTraversals:4804 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901 android.view.Choreographer$CallbackRecord.run:1910 android.view.Choreographer.doCallbacks:1367 android.view.Choreographer.doFrame:1292 android.view.Choreographer$FrameDisplayEventReceiver.run:1870
+I/BLASTBufferQueue_Java( 2737): update, w= 1080 h= 2640 mName = VRI[MainActivity]@de6e37f mNativeObject= 0xb400007889173580 sc.mNativeObject= 0xb4000078f90603d0 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:3590 android.view.ViewRootImpl.relayoutWindow:11685 android.view.ViewRootImpl.performTraversals:4804 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901    
+W/libc    ( 2737): Access denied finding property "vendor.display.enable_optimal_refresh_rate"   
+I/VRI[MainActivity]@de6e37f( 2737): Relayout returned: old=(0,0,1080,2640) new=(0,0,1080,2640) relayoutAsync=false req=(1080,2640)0 dur=8 res=0x3 s={true 0xb4000078a90c2640} ch=true seqId=0     
+D/VRI[MainActivity]@de6e37f( 2737): mThreadedRenderer.initialize() mSurface={isValid=true 0xb4000078a90c2640} hwInitialized=true
+I/SurfaceView( 2737): 181869444 Changes: creating=false format=false size=false visible=false alpha=false hint=false left=false top=false z=false attached=true lifecycleStrategy=false
+I/SV[181869444 MainActivity]( 2737): windowStopped(false) true io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ......ID 0,0-1080,2595} of VRI[MainActivity]@de6e37f
+I/SurfaceView( 2737): 181869444 Changes: creating=true format=false size=false visible=true alpha=false hint=false left=false top=false z=false attached=true lifecycleStrategy=false
+W/libc    ( 2737): Access denied finding property "vendor.display.enable_optimal_refresh_rate"   
+I/BufferQueueProducer( 2737): [](id:ab100000007,api:0,p:0,c:2737) setDequeueTimeout:2077252342   
+I/BLASTBufferQueue_Java( 2737): new BLASTBufferQueue, mName= ad71b84 SurfaceView[com.callup.callup/com.callup.callup.MainActivity]@0 mNativeObject= 0xb4000078890f1d70 caller= android.view.SurfaceView.createBlastSurfaceControls:1781 android.view.SurfaceView.updateSurface:1450 android.view.SurfaceView.setWindowStopped:539 android.view.SurfaceView.surfaceCreated:2327 android.view.ViewRootImpl.notifySurfaceCreated:3502 android.view.ViewRootImpl.performTraversals:5286 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901 android.view.Choreographer$CallbackRecord.run:1910
+I/BLASTBufferQueue_Java( 2737): update, w= 1080 h= 2595 mName = ad71b84 SurfaceView[com.callup.callup/com.callup.callup.MainActivity]@0 mNativeObject= 0xb4000078890f1d70 sc.mNativeObject= 0xb4000078f90468d0 format= 4 caller= android.view.SurfaceView.createBlastSurfaceControls:1782 android.view.SurfaceView.updateSurface:1450 android.view.SurfaceView.setWindowStopped:539 android.view.SurfaceView.surfaceCreated:2327 android.view.ViewRootImpl.notifySurfaceCreated:3502 android.view.ViewRootImpl.performTraversals:5286
+I/SurfaceView( 2737): 181869444 Cur surface: Surface(name=null mNativeObject=0)/@0x86b875        
+D/SurfaceComposerClient( 2737): setCornerRadius ## ad71b84 SurfaceView[com.callup.callup/com.callup.callup.MainActivity]@0#94386 cornerRadius=0.000000
+I/SV[181869444 MainActivity]( 2737): pST: sr = Rect(0, 0 - 1080, 2595) sw = 1080 sh = 2595       
+D/SurfaceView( 2737): 181869444 performSurfaceTransaction RenderWorker position = [0, 0, 1080, 2595] surfaceSize = 1080x2595
+W/libc    ( 2737): Access denied finding property "vendor.display.enable_optimal_refresh_rate"   
+I/SV[181869444 MainActivity]( 2737): updateSurface: mVisible = true mSurface.isValid() = true
+I/SV[181869444 MainActivity]( 2737): updateSurface: mSurfaceCreated = false surfaceChanged = true visibleChanged = true
+I/SurfaceView( 2737): 181869444 visibleChanged -- surfaceCreated
+I/SV[181869444 MainActivity]( 2737): surfaceCreated 1 #1 io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ......ID 0,0-1080,2595}
+W/qdgralloc( 2737): GetSize: Pixel format: 0x3b is not supported by gralloc
+W/qdgralloc( 2737): gralloc failed to allocate buffer for size 0 format 59 AWxAH 1x1 usage 2816  
+E/Gralloc4( 2737): isSupported(1, 1, 59, 1, ...) failed with 7
+E/GraphicBufferAllocator( 2737): Failed to allocate (4 x 4) layerCount 1 format 59 usage b00: 2  
+E/AHardwareBuffer( 2737): GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -2), handle=0x0    
+W/qdgralloc( 2737): GetSize: Pixel format: 0x3b is not supported by gralloc
+W/qdgralloc( 2737): gralloc failed to allocate buffer for size 0 format 59 AWxAH 1x1 usage 2816  
+E/Gralloc4( 2737): isSupported(1, 1, 59, 1, ...) failed with 7
+E/GraphicBufferAllocator( 2737): Failed to allocate (4 x 4) layerCount 1 format 59 usage b00: 2  
+E/AHardwareBuffer( 2737): GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -2), handle=0x0    
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+I/SurfaceView( 2737): 181869444 surfaceChanged -- format=4 w=1080 h=2595
+I/SV[181869444 MainActivity]( 2737): surfaceChanged (1080,2595) 1 #1 io.flutter.embedding.android.FlutterSurfaceView{ad71b84 V.E...... ......ID 0,0-1080,2595}
+I/SurfaceView( 2737): 181869444 surfaceRedrawNeeded
+I/SurfaceView( 2737): 181869444 finishedDrawing
+V/SurfaceView( 2737): Layout: x=0 y=0 w=1080 h=2595, frame=Rect(0, 0 - 1080, 2595)
+D/VRI[MainActivity]@de6e37f( 2737): reportNextDraw android.view.ViewRootImpl.performTraversals:5443 android.view.ViewRootImpl.doTraversal:3924 android.view.ViewRootImpl$TraversalRunnable.run:12903 android.view.Choreographer$CallbackRecord.run:1901 android.view.Choreographer$CallbackRecord.run:1910
+D/VRI[MainActivity]@de6e37f( 2737): Setup new sync=wmsSync-VRI[MainActivity]@de6e37f#12
+I/VRI[MainActivity]@de6e37f( 2737): Creating new active sync group VRI[MainActivity]@de6e37f#13  
+D/VRI[MainActivity]@de6e37f( 2737): Start draw after previous draw not visible
+D/VRI[MainActivity]@de6e37f( 2737): registerCallbacksForSync syncBuffer=false
+D/SurfaceView( 2737): 181869444 updateSurfacePosition RenderWorker, frameNr = 1, position = [0, 0, 1080, 2595] surfaceSize = 1080x2595
+I/SV[181869444 MainActivity]( 2737): uSP: rtp = Rect(0, 0 - 1080, 2595) rtsw = 1080 rtsh = 2595  
+I/SV[181869444 MainActivity]( 2737): onSSPAndSRT: pl = 0 pt = 0 sx = 1.0 sy = 1.0
+I/SV[181869444 MainActivity]( 2737): aOrMT: VRI[MainActivity]@de6e37f t = android.view.SurfaceControl$Transaction@3eed914 fN = 1 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1932 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:401
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b9095650 mBlastBufferQueue=0xb400007889173580 fn= 1 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.SurfaceView.applyOrMergeTransaction:1863 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1932
+D/VRI[MainActivity]@de6e37f( 2737): Received frameDrawingCallback syncResult=0 frameNum=1.       
+I/VRI[MainActivity]@de6e37f( 2737): mWNT: t=0xb4000077b90b4590 mBlastBufferQueue=0xb400007889173580 fn= 1 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$12.onFrameDraw:15441 android.view.ThreadedRenderer$1.onFrameDraw:718 <bottom of call stack>
+I/VRI[MainActivity]@de6e37f( 2737): Setting up sync and frameCommitCallback
+W/qdgralloc( 2737): getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0 
+I/BLASTBufferQueue( 2737): [VRI[MainActivity]@de6e37f#6](f:0,a:0,s:0) onFrameAvailable the first frame is available
+I/SurfaceComposerClient( 2737): apply transaction with the first frame. layerId: 94382, bufferData(ID: 11755325489218, frameNumber: 1)
+I/VRI[MainActivity]@de6e37f( 2737): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+D/VRI[MainActivity]@de6e37f( 2737): reportDrawFinished seqId=0
+I/InsetsSourceConsumer( 2737): applyRequestedVisibilityToControl: visible=true, type=statusBars, host=com.callup.callup/com.callup.callup.MainActivity
+I/InsetsSourceConsumer( 2737): applyRequestedVisibilityToControl: visible=true, type=navigationBars, host=com.callup.callup/com.callup.callup.MainActivity
+I/BLASTBufferQueue( 2737): [ad71b84 SurfaceView[com.callup.callup/com.callup.callup.MainActivity]@0#7](f:0,a:0,s:0) onFrameAvailable the first frame is available
+I/SurfaceComposerClient( 2737): apply transaction with the first frame. layerId: 94387, bufferData(ID: 11755325489213, frameNumber: 1)
+D/VRI[MainActivity]@de6e37f( 2737): mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb4000078a90c2640}
+D/InputMethodManagerUtils( 2737): startInputInner - Id : 0
+I/InputMethodManager( 2737): startInputInner - IInputMethodManagerGlobalInvoker.startInputOrWindowGainedFocus
+I/InputMethodManager( 2737): handleMessage: setImeVisibility visible=false
+D/InsetsController( 2737): hide(ime(), fromIme=false)
+I/ImeTracker( 2737): com.callup.callup:57b064c8: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN      
+D/InputTransport( 2737): Input channel constructed: 'ClientS', fd=173
