@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/auto_call_service.dart';
 import '../services/api/auto_call_api_service.dart';
+import '../services/phone_service.dart';
 import 'dashboard_screen.dart';
 import 'customer_search_screen.dart';
 import 'stats_screen.dart';
@@ -242,11 +243,52 @@ class _CallResultScreenState extends State<CallResultScreen> {
       // 통화 시간 포맷 변환
       String formattedDuration = _formatCallDuration(widget.callDuration);
 
-      // 통화 시작/종료 시간 계산 (현재 시간 기준)
-      final now = DateTime.now();
-      final callEndTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-      final callStartDateTime = now.subtract(Duration(seconds: widget.callDuration));
-      final callStartTime = '${callStartDateTime.hour.toString().padLeft(2, '0')}:${callStartDateTime.minute.toString().padLeft(2, '0')}:${callStartDateTime.second.toString().padLeft(2, '0')}';
+      // 통화 시작/종료 시간 가져오기
+      String callStartTime;
+      String callEndTime;
+
+      // 1순위: Android CallLog에서 실제 통화 기록 가져오기 (가장 정확)
+      final phoneNumber = widget.customer['phone'] ?? widget.customer['customerPhone'];
+      final callLogTimes = await PhoneService.getLastCallTimes(phoneNumber);
+
+      if (callLogTimes != null) {
+        // CallLog에서 가져온 시간 사용
+        final startTime = callLogTimes['startTime'] as DateTime;
+        final endTime = callLogTimes['endTime'] as DateTime;
+
+        callStartTime = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}:${startTime.second.toString().padLeft(2, '0')}';
+        callEndTime = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:${endTime.second.toString().padLeft(2, '0')}';
+
+        // 실제 통화 시간 재계산
+        final actualDuration = callLogTimes['duration'] as int;
+        final hours = actualDuration ~/ 3600;
+        final minutes = (actualDuration % 3600) ~/ 60;
+        final seconds = actualDuration % 60;
+        formattedDuration = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      } else {
+        // 2순위: customer 객체에서 전달받은 callStartTime 사용
+        final actualCallStartTime = widget.customer['callStartTime'] as DateTime?;
+
+        if (actualCallStartTime != null) {
+          final now = DateTime.now();
+
+          callStartTime = '${actualCallStartTime.hour.toString().padLeft(2, '0')}:${actualCallStartTime.minute.toString().padLeft(2, '0')}:${actualCallStartTime.second.toString().padLeft(2, '0')}';
+          callEndTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+
+          // 실제 통화 시간 재계산
+          final actualDuration = now.difference(actualCallStartTime).inSeconds;
+          final hours = actualDuration ~/ 3600;
+          final minutes = (actualDuration % 3600) ~/ 60;
+          final seconds = actualDuration % 60;
+          formattedDuration = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+        } else {
+          // 3순위: 폴백 - 현재 시간 기준으로 역계산
+          final now = DateTime.now();
+          callEndTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+          final callStartDateTime = now.subtract(Duration(seconds: widget.callDuration));
+          callStartTime = '${callStartDateTime.hour.toString().padLeft(2, '0')}:${callStartDateTime.minute.toString().padLeft(2, '0')}:${callStartDateTime.second.toString().padLeft(2, '0')}';
+        }
+      }
 
       // API로 통화 결과 저장 (통화 연결된 경우)
       final result = await AutoCallApiService.saveCallResult(
@@ -585,7 +627,12 @@ class _CallResultScreenState extends State<CallResultScreen> {
               children: [
                 _buildTableCell('제목', labelWidth, isHeader: true, hasTopBorder: true),
                 Expanded(
-                  child: _buildTableCell(widget.customer['event'] ?? '', null, hasTopBorder: true, hasLeftBorder: false),
+                  child: _buildTableCell(
+                    widget.customer['eventName'] ?? widget.customer['event_name'] ?? '',
+                    null,
+                    hasTopBorder: true,
+                    hasLeftBorder: false
+                  ),
                 ),
               ],
             ),
@@ -606,11 +653,28 @@ class _CallResultScreenState extends State<CallResultScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            _buildInfoRow('전화번호', widget.customer['phone'] ?? '', labelWidth, isFirst: true, valueColor: const Color(0xFF383743)),
-            _buildInfoRow('고객정보1', widget.customer['name'] ?? '', labelWidth),
-            _buildInfoRow('고객정보2', '인천 부평구', labelWidth),
-            _buildInfoRow('고객정보3', '쿠팡 이벤트', labelWidth),
-            _buildInfoRow('고객정보4', '#102354', labelWidth),
+            _buildInfoRow(
+              '전화번호',
+              widget.customer['customerPhone'] ?? widget.customer['customer_phone'] ?? '',
+              labelWidth,
+              isFirst: true,
+              valueColor: const Color(0xFF383743)
+            ),
+            _buildInfoRow(
+              '고객정보1',
+              widget.customer['customerName'] ?? widget.customer['customer_name'] ?? '',
+              labelWidth
+            ),
+            _buildInfoRow(
+              '고객정보2',
+              widget.customer['customerInfo1'] ?? widget.customer['customer_info1'] ?? '',
+              labelWidth
+            ),
+            _buildInfoRow(
+              '고객정보3',
+              widget.customer['customerInfo2'] ?? widget.customer['customer_info2'] ?? '',
+              labelWidth
+            ),
             // 통화결과 / 상담결과 (등록 버튼 제거)
             Row(
               children: [

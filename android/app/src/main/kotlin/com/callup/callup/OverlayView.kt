@@ -242,7 +242,8 @@ class OverlayView(
             setOnClickListener {
                 stopCountdown()
                 MainActivity.overlayChannel?.invokeMethod("onTimeout", null)
-                service.hideOverlay()
+                // ❌ 오버레이 닫지 않음 (다음 고객 정보로 업데이트될 예정)
+                // service.hideOverlay()
             }
         }
 
@@ -283,7 +284,8 @@ class OverlayView(
                     handler.postDelayed({
                         // Notify Flutter to move to next customer
                         MainActivity.overlayChannel?.invokeMethod("onTimeout", null)
-                        service.hideOverlay()
+                        // ❌ 오버레이 닫지 않음 (다음 고객 정보로 업데이트될 예정)
+                        // service.hideOverlay()
                     }, 500)
                 }
             }

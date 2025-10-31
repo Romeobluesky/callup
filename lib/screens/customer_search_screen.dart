@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:csv/csv.dart';
-import 'package:charset_converter/charset_converter.dart';
-import 'dart:typed_data';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../widgets/customer_detail_popup.dart';
+import '../services/api/customer_api_service.dart';
 import 'dashboard_screen.dart';
 import 'auto_call_screen.dart';
 import 'stats_screen.dart';
+import 'signup_screen.dart';
 
 class CustomerSearchScreen extends StatefulWidget {
   const CustomerSearchScreen({super.key});
@@ -16,162 +14,128 @@ class CustomerSearchScreen extends StatefulWidget {
   State<CustomerSearchScreen> createState() => _CustomerSearchScreenState();
 }
 
-class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
+class _CustomerSearchScreenState extends State<CustomerSearchScreen> with WidgetsBindingObserver {
   bool _isOn = false;
   final int _selectedIndex = 2; // 고객관리 탭 선택됨
   final TextEditingController _searchController = TextEditingController();
 
-  // CSV에서 로드한 데이터
+  // API에서 로드한 데이터
   List<Map<String, dynamic>> _customerData = [];
   List<Map<String, dynamic>> _filteredCustomerData = [];
   bool _isLoading = true;
+  int _currentPage = 1;
+  int _totalPages = 1;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCustomerData();
-  }
-
-  // CSV 파일에서 고객 데이터 로드
-  Future<void> _loadCustomerData() async {
-    try {
-      debugPrint('=== CSV 로딩 시작 ===');
-
-      // ByteData로 읽어서 EUC-KR 디코딩
-      debugPrint('파일 읽기 시작: assets/test_data/customers.csv');
-      final ByteData bytes = await rootBundle.load('assets/test_data/customers.csv');
-      debugPrint('파일 크기: ${bytes.lengthInBytes} bytes');
-
-      final Uint8List uint8list = bytes.buffer.asUint8List();
-
-      // EUC-KR을 UTF-8로 변환
-      debugPrint('EUC-KR → UTF-8 변환 시작');
-      final String csvString = await CharsetConverter.decode("EUC-KR", uint8list);
-      debugPrint('변환 완료, 문자열 길이: ${csvString.length}');
-
-      // CSV 파싱
-      debugPrint('CSV 파싱 시작');
-      List<List<dynamic>> rowsAsListOfValues = const CsvToListConverter().convert(
-        csvString,
-        eol: '\n',
-        fieldDelimiter: ',',
-      );
-      debugPrint('파싱 완료: ${rowsAsListOfValues.length}행');
-
-      if (rowsAsListOfValues.isEmpty) {
-        debugPrint('경고: CSV 데이터가 비어있습니다');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      debugPrint('첫 번째 행 (헤더): ${rowsAsListOfValues[0]}');
-
-      // 데이터 파싱 (헤더 스킵하고 인덱스로 직접 접근)
-      // CSV 컬럼 순서: 제목, 전화번호, 고객정보1, 고객정보2, 고객정보3, 고객정보4, 날짜, 통화결과, 통화유형, 통화시간, 시간, 메모, 통화녹음, 통화시각, 파일업로드날짜, 데이터설명
-      final List<Map<String, dynamic>> data = [];
-      for (int i = 1; i < rowsAsListOfValues.length; i++) {
-        final row = rowsAsListOfValues[i];
-        if (row.isEmpty || row.length < 7) continue;
-
-        String getValue(int index, [String defaultValue = '']) {
-          if (index < row.length) {
-            String value = row[index].toString().trim();
-            return (value.isEmpty || value == 'null') ? defaultValue : value;
-          }
-          return defaultValue;
-        }
-
-        String? getNullableValue(int index) {
-          if (index < row.length) {
-            String value = row[index].toString().trim();
-            return (value.isEmpty || value == 'null') ? null : value;
-          }
-          return null;
-        }
-
-        // 필수 필드 매핑 (인덱스 기반)
-        final customerData = {
-          'event': getValue(0),           // 제목
-          'phone': getValue(1),           // 전화번호
-          'name': getValue(2),            // 고객정보1
-          'info2': getValue(3),           // 고객정보2
-          'info3': getValue(4),           // 고객정보3
-          'info4': getValue(5),           // 고객정보4
-          'date': getValue(14, getValue(6, '2025-10-01')), // 파일업로드날짜 (14번) 또는 날짜(6번) 폴백
-          'callStatus': getValue(7, '미사용'), // 통화결과
-          'customerType': getNullableValue(8), // 통화유형
-          'callDateTime': getNullableValue(9) != null && getNullableValue(6) != null
-              ? '${getValue(6)}  ${getValue(9)}'
-              : null, // 날짜 + 통화시간
-          'callDuration': getNullableValue(10), // 시간
-          'memo': getNullableValue(11), // 메모
-          'hasAudio': getValue(12) == 'true' || getValue(12) == '1', // 통화녹음
-          'uploadDate': getValue(14), // 파일업로드날짜
-          'description': getValue(15), // 데이터설명
-        };
-
-        data.add(customerData);
-      }
-
-      setState(() {
-        _customerData = data;
-        _filteredCustomerData = data;
-        _isLoading = false;
-      });
-
-      // 디버깅: 로드된 데이터 확인
-      debugPrint('CSV 로드 완료: ${data.length}개 고객');
-      if (data.isNotEmpty) {
-        debugPrint('첫 번째 고객: ${data[0]}');
-      }
-    } catch (e) {
-      debugPrint('CSV 로드 에러: $e');
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // 검색 필터링
-  void _filterCustomers(String query) {
-    debugPrint('검색어: "$query"');
-
-    if (query.isEmpty) {
-      setState(() {
-        _filteredCustomerData = _customerData;
-      });
-      debugPrint('검색어 비어있음, 전체 표시: ${_customerData.length}개');
-      return;
-    }
-
-    final filtered = _customerData.where((customer) {
-      final name = (customer['name'] ?? '').toString().toLowerCase();
-      final phone = (customer['phone'] ?? '').toString().toLowerCase();
-      final event = (customer['event'] ?? '').toString().toLowerCase();
-      final callStatus = (customer['callStatus'] ?? '').toString().toLowerCase();
-      final searchLower = query.toLowerCase();
-
-      final matches = name.contains(searchLower) ||
-          phone.contains(searchLower) ||
-          event.contains(searchLower) ||
-          callStatus.contains(searchLower);
-
-      return matches;
-    }).toList();
-
-    setState(() {
-      _filteredCustomerData = filtered;
-    });
-
-    debugPrint('검색 결과: ${filtered.length}개');
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 앱이 다시 활성화되면 데이터 새로고침
+    if (state == AppLifecycleState.resumed) {
+      _loadCustomerData();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 화면이 다시 표시될 때마다 새로고침
+    // (다른 화면에서 pushReplacement로 돌아올 때도 작동)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadCustomerData();
+      }
+    });
+  }
+
+  // API에서 고객 데이터 로드
+  Future<void> _loadCustomerData({String? searchQuery}) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await CustomerApiService.searchCustomers(
+        name: searchQuery,
+        phone: searchQuery,
+        eventName: searchQuery,
+        callResult: searchQuery,
+        page: _currentPage,
+        limit: 50,
+      );
+
+      if (!mounted) return;
+
+      if (result['requireLogin'] == true) {
+        // JWT 토큰 만료
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 만료되었습니다.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+        );
+        return;
+      }
+
+      if (result['success'] == true) {
+        final customers = result['customers'] as List<dynamic>;
+        final pagination = result['pagination'] as Map<String, dynamic>;
+
+        setState(() {
+          _customerData = customers.map((c) => c as Map<String, dynamic>).toList();
+          _filteredCustomerData = _customerData;
+          _totalPages = pagination['totalPages'] ?? 1;
+          _isLoading = false;
+        });
+
+        debugPrint('고객 데이터 로드 완료: ${customers.length}개');
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? '데이터 로드 실패')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('고객 데이터 로드 오류: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('네트워크 오류: $e')),
+        );
+      }
+    }
+  }
+
+  // 검색 필터링 (API 호출)
+  void _filterCustomers(String query) {
+    debugPrint('검색어: "$query"');
+
+    // 검색 시 페이지를 1로 리셋
+    setState(() {
+      _currentPage = 1;
+    });
+
+    // API로 검색 수행
+    _loadCustomerData(searchQuery: query.isEmpty ? null : query);
   }
 
   @override
@@ -195,15 +159,28 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
 
                   const SizedBox(height: 10),
 
-                  // 디버그 정보
+                  // 페이지 정보
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 26),
-                    child: Text(
-                      '전체: ${_customerData.length}개 / 표시: ${_filteredCustomerData.length}개',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${_customerData.length}개 고객',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (_totalPages > 1)
+                          Text(
+                            '$_currentPage / $_totalPages 페이지',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
 
@@ -211,6 +188,61 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
 
                   // Customer List
                   Expanded(child: _buildCustomerList()),
+
+                  // 페이지네이션 버튼
+                  if (_totalPages > 1)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // 이전 페이지
+                          IconButton(
+                            onPressed: _currentPage > 1 ? () {
+                              setState(() {
+                                _currentPage--;
+                              });
+                              _loadCustomerData(searchQuery: _searchController.text.isEmpty ? null : _searchController.text);
+                            } : null,
+                            icon: Icon(
+                              Icons.chevron_left,
+                              color: _currentPage > 1 ? Colors.white : Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+
+                          // 페이지 번호
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF0756),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              '$_currentPage / $_totalPages',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+
+                          // 다음 페이지
+                          IconButton(
+                            onPressed: _currentPage < _totalPages ? () {
+                              setState(() {
+                                _currentPage++;
+                              });
+                              _loadCustomerData(searchQuery: _searchController.text.isEmpty ? null : _searchController.text);
+                            } : null,
+                            icon: Icon(
+                              Icons.chevron_right,
+                              color: _currentPage < _totalPages ? Colors.white : Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -502,11 +534,59 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
   }
 
   Widget _buildCustomerCard(Map<String, dynamic> customer, double width) {
+    // API 응답 필드 매핑
+    // 프로덕션 서버: camelCase (customerId, name, phone, info1, status, dbTitle, dbDate)
+    // 로컬 서버: snake_case (customer_id, customer_name, customer_phone, data_status)
+    final customerId = customer['customerId'] ?? customer['customer_id'];
+    final dbId = customer['dbId'] ?? customer['db_id'];
+    final eventName = customer['dbTitle'] ?? customer['event_name'] ?? customer['db_title'] ?? '';
+    final customerPhone = customer['phone'] ?? customer['customer_phone'] ?? '';
+    final customerName = customer['name'] ?? customer['customer_name'] ?? '';
+    final customerInfo1 = customer['info1'] ?? customer['customerInfo1'] ?? customer['customer_info1'];
+    final customerInfo2 = customer['info2'] ?? customer['customerInfo2'] ?? customer['customer_info2'];
+    final customerInfo3 = customer['info3'] ?? customer['customerInfo3'] ?? customer['customer_info3'];
+    final dataStatus = customer['status'] ?? customer['callStatus'] ?? customer['data_status'] ?? '미사용';
+    final uploadDate = _formatUploadDate(customer['dbDate'] ?? customer['date'] ?? customer['created_at']);
+
+    // 통화 관련 정보 (camelCase 우선, snake_case 폴백)
+    // ⚠️ 프로덕션 서버에는 아직 통화 관련 필드가 없을 수 있음
+    final callResult = customer['callResult'] ?? customer['call_result'];
+    final callDateTime = customer['callDateTime'] ?? customer['call_datetime'];
+    final callDuration = customer['callDuration'] ?? customer['call_duration'];
+    final consultationResult = customer['consultationResult'] ?? customer['consultation_result'];
+    final memo = customer['memo'];
+    final hasAudio = customer['hasAudio'] == true || customer['hasAudio'] == 1 || customer['has_audio'] == true || customer['has_audio'] == 1;
+
+    debugPrint('=== 고객 카드 데이터 확인 ===');
+    debugPrint('customerId: $customerId, name: $customerName, phone: $customerPhone');
+    debugPrint('eventName: $eventName, dataStatus: $dataStatus, uploadDate: $uploadDate');
+    debugPrint('callResult: $callResult, callDateTime: $callDateTime, consultationResult: $consultationResult');
+
     return GestureDetector(
       onTap: () {
+        // 백엔드 필드를 카멜케이스로 변환하여 팝업에 전달
+        final normalizedCustomer = {
+          'customerId': customerId,
+          'dbId': dbId,
+          'eventName': eventName,
+          'customerPhone': customerPhone,
+          'customerName': customerName,
+          'customerInfo1': customerInfo1,
+          'customerInfo2': customerInfo2,
+          'customerInfo3': customerInfo3,
+          'dataStatus': dataStatus,
+          'callResult': callResult,
+          'callDateTime': callDateTime,
+          'callDuration': callDuration,
+          'consultationResult': consultationResult,
+          'memo': memo,
+          'hasAudio': hasAudio,
+          'uploadDate': uploadDate,
+        };
+
         showDialog(
           context: context,
-          builder: (context) => CustomerDetailPopup(customer: customer),
+          builder: (context) => CustomerDetailPopup(customer: normalizedCustomer),
         );
       },
       child: Container(
@@ -534,7 +614,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 SizedBox(
                   width: 80,
                   child: Text(
-                    customer['date'] ?? '',
+                    uploadDate,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -546,7 +626,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 Expanded(
                   child: Center(
                     child: Text(
-                      customer['event'] ?? '',
+                      eventName,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -568,7 +648,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 SizedBox(
                   width: 70,
                   child: Text(
-                    customer['name'],
+                    customerName,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -578,7 +658,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 ),
                 // 전화번호 (왼쪽)
                 Text(
-                  customer['phone'],
+                  customerPhone,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -590,45 +670,36 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
           ),
 
           // 통화 상태 및 통화 일시/시간 (같은 줄)
-          if (customer['callDateTime'] != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Row(
-                children: [
-                  // 통화 상태 (왼쪽 고정폭)
-                  SizedBox(
-                    width: 70,
-                    child: Text(
-                      customer['callStatus'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  // 통화 일시 및 시간 (왼쪽)
-                  Text(
-                    '${customer['callDateTime']}  ${customer['callDuration']}',
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Row(
+              children: [
+                // 통화 상태 (왼쪽 고정폭)
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    dataStatus,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                ],
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Row(
-                children: [
-                  // 통화 상태 (왼쪽 고정폭)
-                  SizedBox(
-                    width: 70,
+                ),
+                // 통화 일시 및 시간 (사용완료일 때만 표시)
+                if (dataStatus == '사용완료' && callDateTime != null)
+                  Expanded(
                     child: Text(
-                      customer['callStatus'],
+                      () {
+                        final dateTime = _formatCallDateTime(callDateTime);
+                        final duration = callDuration != null ? _formatCallTime(callDuration) : '';
+
+                        // 통화시간이 있으면 함께 표시
+                        if (duration.isNotEmpty && duration != '00:00:00') {
+                          return '$dateTime  $duration';
+                        }
+                        return dateTime;
+                      }(),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -636,32 +707,64 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                       ),
                     ),
                   ),
+              ],
+            ),
+          ),
+
+          // 통화결과 및 상담결과 (사용완료일 때만 표시)
+          if (dataStatus == '사용완료')
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: Row(
+                children: [
+                  // 통화결과 (있을 때만 표시)
+                  if (callResult != null && callResult.toString().isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        callResult.toString(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFFCDDD),
+                        ),
+                      ),
+                    ),
+                  // 간격
+                  if (callResult != null && callResult.toString().isNotEmpty && consultationResult != null && consultationResult.toString().isNotEmpty)
+                    const SizedBox(width: 8),
+                  // 상담결과 (있을 때만 표시)
+                  if (consultationResult != null && consultationResult.toString().isNotEmpty)
+                    Expanded(
+                      child: Text(
+                        consultationResult.toString().length > 15
+                            ? '${consultationResult.toString().substring(0, 15)}...'
+                            : consultationResult.toString(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
 
-          // 고객 유형 및 메모 (같은 줄)
-          if (customer['customerType'] != null)
+          // 메모 및 녹취 아이콘
+          if (memo != null && memo.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               child: Row(
                 children: [
-                  // 고객 유형 (왼쪽 고정폭)
-                  SizedBox(
-                    width: 70,
-                    child: Text(
-                      customer['customerType'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  // 메모 (왼쪽)
+                  // 메모 (10자 초과 시 말줄임표)
                   Expanded(
                     child: Text(
-                      customer['memo'] ?? '',
+                      '메모: ${memo.length > 10 ? '${memo.substring(0, 10)}...' : memo}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -669,12 +772,15 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                       ),
                     ),
                   ),
-                  // 오디오 아이콘 (오른쪽)
-                  if (customer['hasAudio'])
-                    const Icon(
-                      Icons.volume_up,
-                      color: Color(0xFFFFCDDD),
-                      size: 26,
+                  // 녹취 아이콘 (hasAudio가 실제로 true인 경우만)
+                  if (hasAudio)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Icon(
+                        Icons.volume_up,
+                        color: Color(0xFFFFCDDD),
+                        size: 26,
+                      ),
                     ),
                 ],
               ),
@@ -684,4 +790,125 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
       ),
     );
   }
+
+  // 통화 일시를 한국 시간 기준으로 포맷 (2025-10-31 14:30)
+  String _formatCallDateTime(dynamic callDateTime) {
+    if (callDateTime == null) return '';
+
+    try {
+      DateTime dt;
+      if (callDateTime is String) {
+        // 빈 문자열 체크
+        String dateStr = callDateTime.trim();
+        if (dateStr.isEmpty) return '';
+
+        // ISO 8601 형식 (2025-10-31T14:30:00Z 또는 2025-10-31T14:30:00.000Z)
+        if (dateStr.contains('T')) {
+          dt = DateTime.parse(dateStr);
+        }
+        // 공백 구분 형식 (2025-10-31 14:30:00)
+        else if (dateStr.contains(' ')) {
+          dt = DateTime.parse(dateStr.replaceAll(' ', 'T'));
+        }
+        // 날짜만 있는 경우 (2025-10-31)
+        else if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateStr)) {
+          dt = DateTime.parse('${dateStr}T00:00:00');
+        }
+        else {
+          // 빈 문자열이 아닌 경우만 로그 출력
+          if (dateStr.isNotEmpty) {
+            debugPrint('지원되지 않는 날짜 형식: "$dateStr"');
+          }
+          return '';
+        }
+      } else if (callDateTime is DateTime) {
+        dt = callDateTime;
+      } else {
+        return '';
+      }
+
+      // 이미 로컬 시간이면 그대로, UTC이면 KST로 변환
+      final kst = dt.isUtc ? dt.add(const Duration(hours: 9)) : dt;
+
+      // 2025-10-31 14:30 형태로 포맷
+      return '${kst.year}-${kst.month.toString().padLeft(2, '0')}-${kst.day.toString().padLeft(2, '0')} '
+             '${kst.hour.toString().padLeft(2, '0')}:${kst.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      debugPrint('통화 일시 포맷 오류: $e (입력값: "$callDateTime")');
+      return '';
+    }
+  }
+
+  // 통화 시간을 00:00:00 형태로 포맷 (24시간)
+  String _formatCallTime(dynamic callDuration) {
+    if (callDuration == null) return '';
+
+    try {
+      if (callDuration is String) {
+        // 이미 00:00:00 형태면 그대로 반환
+        if (RegExp(r'^\d{2}:\d{2}:\d{2}$').hasMatch(callDuration)) {
+          return callDuration;
+        }
+
+        // 숫자만 있는 경우 초로 변환
+        final seconds = int.tryParse(callDuration);
+        if (seconds != null) {
+          final hours = seconds ~/ 3600;
+          final minutes = (seconds % 3600) ~/ 60;
+          final secs = seconds % 60;
+          return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+        }
+      } else if (callDuration is int) {
+        // 초 단위로 전달된 경우
+        final hours = callDuration ~/ 3600;
+        final minutes = (callDuration % 3600) ~/ 60;
+        final secs = callDuration % 60;
+        return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+      }
+
+      return '';
+    } catch (e) {
+      debugPrint('통화 시간 포맷 오류: $e');
+      return '';
+    }
+  }
+
+  // 업로드 날짜를 한국 시간 기준으로 포맷 (2025-10-24)
+  String _formatUploadDate(dynamic uploadDate) {
+    if (uploadDate == null) return '';
+
+    try {
+      DateTime dt;
+      if (uploadDate is String) {
+        String dateStr = uploadDate.trim();
+        if (dateStr.isEmpty) return '';
+
+        // ISO 8601 형식 (2025-10-24T15:00:00.000Z)
+        if (dateStr.contains('T')) {
+          dt = DateTime.parse(dateStr);
+        }
+        // 날짜만 있는 경우 (2025-10-24)
+        else if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateStr)) {
+          dt = DateTime.parse('${dateStr}T00:00:00Z');  // UTC로 파싱
+        }
+        else {
+          return dateStr.substring(0, 10);  // 그대로 반환
+        }
+      } else if (uploadDate is DateTime) {
+        dt = uploadDate;
+      } else {
+        return '';
+      }
+
+      // UTC이면 KST로 변환 (UTC+9)
+      final kst = dt.isUtc ? dt.add(const Duration(hours: 9)) : dt;
+
+      // 2025-10-24 형태로 포맷
+      return '${kst.year}-${kst.month.toString().padLeft(2, '0')}-${kst.day.toString().padLeft(2, '0')}';
+    } catch (e) {
+      debugPrint('업로드 날짜 포맷 오류: $e (입력값: "$uploadDate")');
+      return '';
+    }
+  }
+
 }

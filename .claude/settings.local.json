@@ -40,7 +40,14 @@
       "Bash(pm2 list:*)",
       "Bash(pm2 restart:*)",
       "Bash(powershell -Command \"cd ''C:\\Users\\hyesu\\Desktop\\dev\\VSCODE\\callup-admin''; pm2 restart callup-admin\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(pm2 logs:*)",
+      "Bash(ipconfig:*)",
+      "Bash(Select-String -Pattern \"API|flutter|CallUp|customers|search\" -Context 0,2)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "Bash($null)",
+      "Bash(flutter clean:*)"
     ],
     "deny": [],
     "ask": []

@@ -179,6 +179,9 @@ class _AutoCallScreenState extends State<AutoCallScreen>
 
     // customer 객체에서 통화 시간 추출 (기본값 0)
     final callDuration = _currentCustomer!['callDuration'] ?? 0;
+    debugPrint('=== CallResultScreen으로 이동 ===');
+    debugPrint('고객 정보: ${_currentCustomer!['name']}');
+    debugPrint('통화 시간 (callDuration): $callDuration초');
 
     Navigator.push(
       context,

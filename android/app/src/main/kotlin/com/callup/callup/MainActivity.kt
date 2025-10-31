@@ -89,6 +89,15 @@ class MainActivity : FlutterActivity() {
                     stopPhoneStateMonitoring()
                     result.success(true)
                 }
+                "getLastCallTimes" -> {
+                    val phoneNumber = call.argument<String>("phoneNumber")
+                    if (phoneNumber != null) {
+                        val callTimes = getLastCallTimes(phoneNumber)
+                        result.success(callTimes)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "전화번호가 필요합니다.", null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -289,6 +298,59 @@ class MainActivity : FlutterActivity() {
             android.util.Log.d("PhoneState", "통화 상태 모니터링 중지됨")
         } catch (e: Exception) {
             android.util.Log.e("PhoneState", "통화 상태 모니터링 중지 오류", e)
+        }
+    }
+
+    /**
+     * 가장 최근 통화 기록의 시작/종료 시간 조회 (특정 전화번호)
+     * @param phoneNumber 조회할 전화번호
+     * @return Map<String, Long>? (startTime, endTime, duration) 또는 null
+     */
+    private fun getLastCallTimes(phoneNumber: String): Map<String, Long>? {
+        try {
+            val cursor: Cursor? = contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                arrayOf(
+                    CallLog.Calls.DATE,           // 통화 시작 시간 (milliseconds)
+                    CallLog.Calls.DURATION,       // 통화 시간 (초)
+                    CallLog.Calls.NUMBER,         // 전화번호
+                    CallLog.Calls.TYPE            // 통화 유형
+                ),
+                "${CallLog.Calls.NUMBER} = ? AND ${CallLog.Calls.TYPE} = ?",
+                arrayOf(phoneNumber, CallLog.Calls.OUTGOING_TYPE.toString()),
+                "${CallLog.Calls.DATE} DESC"      // 최신 순 정렬
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val dateIndex = it.getColumnIndex(CallLog.Calls.DATE)
+                    val durationIndex = it.getColumnIndex(CallLog.Calls.DURATION)
+
+                    if (dateIndex != -1 && durationIndex != -1) {
+                        val startTime = it.getLong(dateIndex)
+                        val duration = it.getLong(durationIndex)
+                        val endTime = startTime + (duration * 1000)  // 초를 밀리초로 변환
+
+                        android.util.Log.d("CallLog", "통화 기록 조회 성공")
+                        android.util.Log.d("CallLog", "시작: $startTime, 종료: $endTime, 시간: ${duration}초")
+
+                        return mapOf(
+                            "startTime" to startTime,
+                            "endTime" to endTime,
+                            "duration" to duration
+                        )
+                    }
+                }
+            }
+
+            android.util.Log.w("CallLog", "통화 기록을 찾을 수 없습니다: $phoneNumber")
+            return null
+        } catch (e: SecurityException) {
+            android.util.Log.e("CallLog", "READ_CALL_LOG 권한이 없습니다", e)
+            return null
+        } catch (e: Exception) {
+            android.util.Log.e("CallLog", "통화 기록 조회 오류", e)
+            return null
         }
     }
 

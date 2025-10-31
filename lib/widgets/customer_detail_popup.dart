@@ -35,7 +35,7 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
   }
 
   Future<void> _makePhoneCall() async {
-    final phoneNumber = widget.customer['phone'] ?? '';
+    final phoneNumber = widget.customer['customerPhone'] ?? widget.customer['customer_phone'] ?? '';
 
     if (!PhoneService.isValidPhoneNumber(phoneNumber)) {
       if (mounted) {
@@ -99,6 +99,62 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
         },
       ),
     );
+  }
+
+  String _formatReservation(dynamic date, dynamic time) {
+    if (date == null && time == null) return '';
+    if (date == null) return time.toString();
+    if (time == null) return date.toString();
+    return '$date    $time';
+  }
+
+  String _extractDate(dynamic dateTime) {
+    if (dateTime == null) return '';
+    final dateStr = dateTime.toString();
+
+    // ISO 8601 형식: "2025-10-31T14:30:00" → "2025-10-31"
+    if (dateStr.contains('T')) {
+      return dateStr.split('T')[0];
+    }
+
+    // 공백 구분 형식: "2025-10-24 14:30:00" → "2025-10-24"
+    if (dateStr.contains(' ')) {
+      return dateStr.split(' ')[0];
+    }
+
+    // 날짜만 있는 경우: "2025-10-24" → "2025-10-24"
+    return dateStr;
+  }
+
+  List<Widget> _buildCallHistoryRows() {
+    final callHistory = widget.customer['callHistory'] as List<dynamic>?;
+    if (callHistory == null || callHistory.isEmpty) return [];
+
+    return callHistory.map((history) {
+      final historyMap = history as Map<String, dynamic>;
+      return Row(
+        children: [
+          Expanded(
+            flex: 35,
+            child: _buildHistoryCell(
+              _extractDate(historyMap['callDateTime']),
+              isFirst: true
+            )
+          ),
+          Expanded(
+            flex: 30,
+            child: _buildHistoryCell(historyMap['callDuration'] ?? '')
+          ),
+          Expanded(
+            flex: 35,
+            child: _buildHistoryCell(
+              historyMap['callResult'] ?? '',
+              isLast: true
+            )
+          ),
+        ],
+      );
+    }).toList();
   }
 
   @override
@@ -188,7 +244,7 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: Text(
-                      '제목 : ${widget.customer['event']}     #102354',
+                      '제목 : ${widget.customer['eventName'] ?? widget.customer['event_name'] ?? ''}     #${widget.customer['customerId'] ?? widget.customer['customer_id'] ?? ''}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -199,7 +255,7 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: Text(
-                      '분배날짜 : ${widget.customer['date']}',
+                      '분배날짜 : ${widget.customer['uploadDate'] ?? widget.customer['created_at']?.toString().substring(0, 10) ?? ''}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -220,50 +276,88 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
                   Row(
                     children: [
                       _buildTableLabel('전화번호', labelWidth, isFirst: true),
-                      _buildTableValue(widget.customer['phone'], valueWidth, isFirst: true),
+                      _buildTableValue(
+                        widget.customer['customerPhone'] ?? widget.customer['customer_phone'] ?? '',
+                        valueWidth,
+                        isFirst: true
+                      ),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('고객정보1', labelWidth),
-                      _buildTableValue(widget.customer['name'], valueWidth),
+                      _buildTableValue(
+                        widget.customer['customerInfo1'] ?? widget.customer['customer_info1'] ?? widget.customer['info1'] ?? '',
+                        valueWidth
+                      ),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('고객정보2', labelWidth),
-                      _buildTableValue(widget.customer['info2'] ?? '', valueWidth),
+                      _buildTableValue(
+                        widget.customer['customerInfo2'] ?? widget.customer['customer_info2'] ?? widget.customer['info2'] ?? '',
+                        valueWidth
+                      ),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('고객정보3', labelWidth),
-                      _buildTableValue(widget.customer['info3'] ?? '', valueWidth),
+                      _buildTableValue(
+                        widget.customer['customerInfo3'] ?? widget.customer['customer_info3'] ?? widget.customer['info3'] ?? '',
+                        valueWidth
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _buildTableLabel('디비상태', labelWidth),
+                      _buildTableValue(
+                        widget.customer['dataStatus'] ?? widget.customer['data_status'] ?? '미사용',
+                        valueWidth
+                      ),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('통화결과', labelWidth),
-                      _buildTableValue(widget.customer['callStatus'] ?? '미사용', valueWidth),
+                      _buildTableValue(
+                        widget.customer['callResult'] ?? widget.customer['call_result'] ?? '',
+                        valueWidth
+                      ),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('상담결과', labelWidth),
-                      _buildTableValue(widget.customer['customerType'] ?? '', valueWidth),
+                      _buildTableValue(
+                        widget.customer['consultationResult'] ?? widget.customer['consultation_result'] ?? '',
+                        valueWidth
+                      ),
                     ],
                   ),
                   Row(
                     children: [
                       _buildTableLabel('통화예약', labelWidth),
-                      _buildTableValue('2025-10-25    15:30:00', valueWidth),
+                      _buildTableValue(
+                        _formatReservation(
+                          widget.customer['reservationDate'],
+                          widget.customer['reservationTime']
+                        ),
+                        valueWidth
+                      ),
                     ],
                   ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTableLabel('메모', labelWidth, isLarge: true),
-                      _buildTableValue(widget.customer['memo'] ?? '', valueWidth, isLarge: true),
+                      _buildTableValue(
+                        widget.customer['memo'] ?? '',
+                        valueWidth,
+                        isLarge: true
+                      ),
                     ],
                   ),
                 ],
@@ -283,20 +377,53 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
                       Expanded(flex: 35, child: _buildHistoryHeader('통화결과', isLast: true)),
                     ],
                   ),
-                  Row(
-                    children: [
-                      Expanded(flex: 35, child: _buildHistoryCell('2025-10-10', isFirst: true)),
-                      Expanded(flex: 30, child: _buildHistoryCell('14:02:11')),
-                      Expanded(flex: 35, child: _buildHistoryCell('부재', isLast: true)),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Expanded(flex: 35, child: _buildHistoryCell('2025-10-01', isFirst: true)),
-                      Expanded(flex: 30, child: _buildHistoryCell('12:25:23')),
-                      Expanded(flex: 35, child: _buildHistoryCell('통화성공', isLast: true)),
-                    ],
-                  ),
+                  // 통화 이력 표시 (API에서 제공되는 경우)
+                  if (widget.customer['callHistory'] != null)
+                    ..._buildCallHistoryRows()
+                  else if (widget.customer['callDateTime'] != null)
+                    // 단일 통화 기록이 있는 경우
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 35,
+                          child: _buildHistoryCell(
+                            _extractDate(widget.customer['callDateTime']),
+                            isFirst: true
+                          )
+                        ),
+                        Expanded(
+                          flex: 30,
+                          child: _buildHistoryCell(
+                            widget.customer['callDuration'] ?? ''
+                          )
+                        ),
+                        Expanded(
+                          flex: 35,
+                          child: _buildHistoryCell(
+                            widget.customer['callResult'] ?? widget.customer['callStatus'] ?? '',
+                            isLast: true
+                          )
+                        ),
+                      ],
+                    )
+                  else
+                    // 통화 기록이 없는 경우
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 35,
+                          child: _buildHistoryCell('-', isFirst: true)
+                        ),
+                        Expanded(
+                          flex: 30,
+                          child: _buildHistoryCell('-')
+                        ),
+                        Expanded(
+                          flex: 35,
+                          child: _buildHistoryCell('미사용', isLast: true)
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -404,7 +531,7 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
   }) {
     return Container(
       height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide.none,
@@ -417,10 +544,12 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
         child: Text(
           value,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
+          overflow: TextOverflow.visible,
+          maxLines: 1,
         ),
       ),
     );

@@ -7,8 +7,8 @@ import 'api_client.dart';
 class CustomerApiService {
   static final ApiClient _client = ApiClient();
 
-  /// 고객 검색
-  /// GET /api/customers/search?name=&phone=&eventName=&callResult=&page=1&limit=20
+  /// 고객 검색 (상담원 배정 고객)
+  /// GET /api/agent/customers
   static Future<Map<String, dynamic>> searchCustomers({
     String? name,
     String? phone,
@@ -19,22 +19,39 @@ class CustomerApiService {
   }) async {
     try {
       // 쿼리 파라미터 구성
-      final queryParams = <String>[];
-      if (name != null && name.isNotEmpty) queryParams.add('name=$name');
-      if (phone != null && phone.isNotEmpty) queryParams.add('phone=$phone');
-      if (eventName != null && eventName.isNotEmpty) queryParams.add('eventName=$eventName');
-      if (callResult != null && callResult.isNotEmpty) queryParams.add('callResult=$callResult');
-      queryParams.add('page=$page');
-      queryParams.add('limit=$limit');
+      String queryParams = '';
+      if (eventName != null && eventName.isNotEmpty) {
+        queryParams += '?event_name=$eventName';
+      }
+      if (callResult != null && callResult.isNotEmpty) {
+        queryParams += queryParams.isEmpty ? '?' : '&';
+        queryParams += 'data_status=$callResult';
+      }
 
-      final endpoint = '${ApiConfig.customersSearch}?${queryParams.join('&')}';
-      final data = await _client.get(endpoint);
+      // API 호출
+      final data = await _client.get('${ApiConfig.agentCustomers}$queryParams');
 
       if (data['success'] == true) {
+        // data['data']가 List인지 Map인지 확인
+        List<dynamic> customers;
+        if (data['data'] is List) {
+          customers = data['data'] as List;
+        } else if (data['data'] is Map) {
+          // Map 구조인 경우 (예: { total: 10, customers: [...] })
+          final dataMap = data['data'] as Map<String, dynamic>;
+          customers = dataMap['customers'] as List? ?? [];
+        } else {
+          customers = [];
+        }
+
         return {
           'success': true,
-          'customers': data['data']['customers'],
-          'pagination': data['data']['pagination'],
+          'customers': customers,
+          'pagination': {
+            'totalPages': 1,
+            'currentPage': 1,
+            'totalCount': customers.length,
+          },
         };
       } else {
         return {

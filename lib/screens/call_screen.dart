@@ -14,10 +14,12 @@ class CallScreen extends StatefulWidget {
 class _CallScreenState extends State<CallScreen> {
   int _seconds = 0;
   Timer? _timer;
+  late DateTime _callStartTime;
 
   @override
   void initState() {
     super.initState();
+    _callStartTime = DateTime.now();  // 통화 시작 시간 기록
     _startTimer();
   }
 
@@ -38,11 +40,18 @@ class _CallScreenState extends State<CallScreen> {
 
   void _endCall() {
     _timer?.cancel();
+
+    // 통화 시작 시간을 customer 객체에 추가
+    final customerWithStartTime = {
+      ...widget.customer,
+      'callStartTime': _callStartTime,
+    };
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 200),
         pageBuilder: (context, animation, _) => CallResultScreen(
-          customer: widget.customer,
+          customer: customerWithStartTime,
           callDuration: _seconds,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

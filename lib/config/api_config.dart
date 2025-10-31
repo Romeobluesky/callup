@@ -29,8 +29,10 @@ class ApiConfig {
   static const String callResult = '/api/call-result';
 
   // 고객 관리 API
-  static const String customersSearch = '/api/customers/search';
+  static const String agentCustomers = '/api/agent/customers';  // 상담원에게 할당된 고객 조회
+  static const String customersSearch = '/api/customers/search';  // 전체 고객 검색 (관리자용)
   static String customerDetail(int customerId) => '/api/customers/$customerId';
+  static String dbCustomers(int dbId) => '/api/db-lists/$dbId/customers';
 
   // 통계 API
   static const String statistics = '/api/statistics';

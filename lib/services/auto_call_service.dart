@@ -53,8 +53,14 @@ class AutoCallService {
           break;
 
         case 'OFFHOOK':
-          // OFFHOOK 발생 (전화 걸기 시작)
-          debugPrint('OFFHOOK 감지 (전화 걸기 시작)');
+          // OFFHOOK 발생 (전화 걸기 시작 또는 통화 연결)
+          debugPrint('OFFHOOK 감지 (전화 걸기 시작 또는 통화 연결)');
+
+          // 통화 시작 시간 기록 (아직 기록되지 않은 경우)
+          if (_callStartTime == null) {
+            _callStartTime = DateTime.now();
+            debugPrint('통화 시작 시간 기록 (OFFHOOK): $_callStartTime');
+          }
           break;
 
         case 'IDLE':
@@ -72,23 +78,42 @@ class AutoCallService {
             _callCompleter!.complete(CallResult.timeout);
           } else {
             // 카운트다운이 이미 완료된 후 통화 종료
-            if (callDuration > 0 && _connectedCustomer != null) {
+            if (_connectedCustomer != null) {
               // 통화 시간 계산
               final callEndTime = DateTime.now();
+              debugPrint('=== 통화 시간 계산 ===');
+              debugPrint('통화 시작 시간 (_callStartTime): $_callStartTime');
+              debugPrint('통화 종료 시간 (callEndTime): $callEndTime');
+              debugPrint('네이티브 callDuration: $callDuration초');
+
+              // _callStartTime이 있으면 실제 통화 시간 계산, 없으면 네이티브 값 사용
               final actualCallDuration = _callStartTime != null
                   ? callEndTime.difference(_callStartTime!).inSeconds
                   : callDuration;
 
-              // 통화 시간을 customer 객체에 추가
+              debugPrint('최종 계산된 통화 시간 (actualCallDuration): $actualCallDuration초');
+
+              // 통화 시간이 0초인 경우 경고
+              if (actualCallDuration == 0) {
+                debugPrint('⚠️ 경고: 통화 시간이 0초입니다. _callStartTime이 제대로 기록되지 않았을 수 있습니다.');
+              }
+
+              // 통화 시간과 실제 시작/종료 시간을 customer 객체에 추가
               final customerWithDuration = {
                 ..._connectedCustomer!,
                 'callDuration': actualCallDuration,
+                'callStartTime': _callStartTime,  // 실제 통화 시작 시간
+                'callEndTime': callEndTime,        // 실제 통화 종료 시간
               };
+
+              debugPrint('=== Customer 객체에 추가된 시간 ===');
+              debugPrint('callStartTime DateTime: ${customerWithDuration['callStartTime']}');
+              debugPrint('callEndTime DateTime: ${customerWithDuration['callEndTime']}');
+              debugPrint('callDuration: ${customerWithDuration['callDuration']}초');
 
               // 통화 연결된 후 종료 → CallResultScreen으로 이동
               debugPrint('통화 종료 → CallResultScreen 전환 신호 발송');
               debugPrint('통화 종료된 고객: ${_connectedCustomer!['name']} (저장된 정보 사용)');
-              debugPrint('통화 시간: $actualCallDuration초');
 
               // remainingCount = 현재 큐에 남은 고객 수 - 1 (현재 처리 중인 고객 제외)
               final remainingCount = customerQueue.length - currentIndex - 1;
@@ -221,17 +246,21 @@ class AutoCallService {
         debugPrint('통화 시작 시간: $_callStartTime');
       }
 
+      // 통화 시작 시간을 customer 객체에 추가
+      final customerWithStartTime = {
+        ...customer,
+        'callStartTime': _callStartTime,
+      };
+
       // 통화 연결 → CallResultScreen으로 이동
       _stateController.add(AutoCallState(
         status: AutoCallStatus.connected,
-        customer: customer,
+        customer: customerWithStartTime,
         progress: progress,
       ));
       // 여기서 대기, resumeAfterResult()로 재개됨
     } else if (result == CallResult.timeout) {
       debugPrint('15초 타임아웃 → 전화 강제 종료 후 부재중 저장');
-
-      // 오버레이는 숨기지 않고 유지 (다음 고객으로 바로 전환)
 
       // 현재 통화 강제 종료
       await PhoneService.endCall();
@@ -240,10 +269,87 @@ class AutoCallService {
       // 부재중 자동 저장
       await _saveAutoResult(customer, '부재중');
 
-      // 다음 고객으로 (오버레이는 _processNextCustomer에서 업데이트됨)
+      // 다음 고객으로 이동
       currentIndex++;
       completedCount++;  // 처리 완료한 고객 수 증가
-      await _processNextCustomer();
+
+      // 다음 고객이 있는지 확인
+      if (currentIndex >= customerQueue.length) {
+        debugPrint('전체 고객 처리 완료');
+        await OverlayService.hideOverlay();
+        _handleComplete();
+        return;
+      }
+
+      // 다음 고객 정보 가져오기
+      final nextCustomer = customerQueue[currentIndex];
+      final nextRemainingCount = customerQueue.length - currentIndex;
+      final nextProgress = '$nextRemainingCount/$totalAssignedCount';
+
+      debugPrint('=== 다음 고객 처리 시작 (타임아웃 후) ===');
+      debugPrint('고객명: ${nextCustomer['name']}');
+      debugPrint('전화번호: ${nextCustomer['phone']}');
+      debugPrint('progress: $nextProgress');
+
+      // 오버레이 업데이트 (꺼지지 않고 그대로 유지하면서 정보만 업데이트)
+      await OverlayService.updateOverlay(
+        customerName: nextCustomer['name'] ?? '-',
+        customerPhone: nextCustomer['phone'] ?? '-',
+        progress: nextProgress,
+        status: '응답대기',
+        countdown: 15,
+      );
+
+      // ❌ 상태 업데이트 제거 (오토콜 페이지가 보이는 원인!)
+      // _stateController.add(AutoCallState(
+      //   status: AutoCallStatus.ringing,
+      //   customer: nextCustomer,
+      //   progress: nextProgress,
+      // ));
+
+      // 잠시 대기 후 전화 걸기
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // 카운트다운 시작 (전화 걸기 전)
+      final connectionFuture = _waitForConnection();
+
+      // 전화 걸기
+      PhoneService.makePhoneCallInBackground(nextCustomer['phone'] ?? '');
+
+      // 카운트다운 완료 대기
+      final nextResult = await connectionFuture;
+
+      // 통화 연결 또는 타임아웃 처리
+      if (nextResult == CallResult.connected) {
+        // 통화 연결됨 → 오버레이 숨기기
+        await OverlayService.hideOverlay();
+
+        if (_connectedCustomer == null) {
+          _connectedCustomer = nextCustomer;
+          _callStartTime = DateTime.now();
+        }
+
+        _stateController.add(AutoCallState(
+          status: AutoCallStatus.connected,
+          customer: nextCustomer,
+          progress: nextProgress,
+        ));
+      } else if (nextResult == CallResult.timeout) {
+        // 다음 타임아웃 → 부재중 저장
+        await PhoneService.endCall();
+        await Future.delayed(const Duration(milliseconds: 500));
+        await _saveAutoResult(nextCustomer, '부재중');
+        currentIndex++;
+        completedCount++;
+
+        // 다음 고객이 있으면 다음 고객 처리 계속 (오버레이는 유지한 채로)
+        if (currentIndex < customerQueue.length) {
+          await _processNextCustomer();
+        } else {
+          await OverlayService.hideOverlay();
+          _handleComplete();
+        }
+      }
     } else {
       // cancelled - 오버레이 숨기기
       await OverlayService.hideOverlay();
@@ -292,6 +398,12 @@ class AutoCallService {
 
     // 통화 연결된 고객 정보 저장
     _connectedCustomer = getCurrentCustomer();
+
+    // 통화 시작 시간 기록 (아직 기록되지 않은 경우)
+    if (_callStartTime == null) {
+      _callStartTime = DateTime.now();
+      debugPrint('통화 시작 시간 기록: $_callStartTime');
+    }
 
     if (_callCompleter != null && !_callCompleter!.isCompleted) {
       _callCompleter!.complete(CallResult.connected);

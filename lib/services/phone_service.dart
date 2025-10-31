@@ -194,4 +194,30 @@ class PhoneService {
     final phoneRegex = RegExp(r'^(01[0-9]|02|0[3-9]{1}[0-9]{1})[0-9]{3,4}[0-9]{4}$');
     return phoneRegex.hasMatch(cleanNumber);
   }
+
+  /// 가장 최근 통화 기록의 시작/종료 시간 가져오기
+  /// Returns: {'startTime': DateTime, 'endTime': DateTime, 'duration': int(초)}
+  static Future<Map<String, dynamic>?> getLastCallTimes(String phoneNumber) async {
+    try {
+      final cleanNumber = phoneNumber.replaceAll('-', '').replaceAll(' ', '');
+
+      if (Platform.isAndroid) {
+        final result = await phoneStatePlatform.invokeMethod('getLastCallTimes', {
+          'phoneNumber': cleanNumber,
+        });
+
+        if (result != null) {
+          return {
+            'startTime': DateTime.fromMillisecondsSinceEpoch(result['startTime'] as int),
+            'endTime': DateTime.fromMillisecondsSinceEpoch(result['endTime'] as int),
+            'duration': result['duration'] as int,
+          };
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('통화 기록 조회 오류: $e');
+      return null;
+    }
+  }
 }
