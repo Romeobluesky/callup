@@ -34,8 +34,8 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   int _countdown = 5;
   String _progress = '0/0';
   List<Map<String, dynamic>> _customers = [];
-  int _totalCustomerCount = 0;  // 전체 고객 수 (처음 로드 시 저장)
-  int _processedCount = 0;  // 이미 처리된 고객 수 (API에서 받음)
+  int _totalAssignedCount = 0;  // 분배받은 총 개수 (고정값, 절대 변경 금지!)
+  int _completedCount = 0;  // 처리 완료한 고객 수 (API에서 받음)
 
   // Stream 구독
   StreamSubscription<AutoCallState>? _stateSubscription;
@@ -90,10 +90,13 @@ class _AutoCallScreenState extends State<AutoCallScreen>
 
     await _loadCustomers();
     // 고객이 로드되면 첫 번째 고객 정보 표시
-    if (_customers.isNotEmpty) {
+    if (_customers.isNotEmpty && _totalAssignedCount > 0) {
       setState(() {
         _currentCustomer = _customers[0];
-        _progress = '1/${_customers.length}';
+        // remainingCount = 실제 미사용 고객 수 (API에서 받은 customers.length)
+        final remainingCount = _customers.length;
+        _progress = '$remainingCount/$_totalAssignedCount';
+        debugPrint('✅ 첫 로드 progress: $remainingCount/$_totalAssignedCount');
       });
     }
   }
@@ -139,6 +142,11 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             _callStatus = '완료';
             _isAutoRunning = false;
             _isPaused = false;
+            // 전체 완료 시 0/totalAssignedCount 표시 + 고객 정보 초기화
+            if (_totalAssignedCount > 0) {
+              _progress = '0/$_totalAssignedCount';
+            }
+            _currentCustomer = null;  // 고객 정보 지우기
             _showCompletionDialog();
             break;
           case AutoCallStatus.idle:
@@ -146,9 +154,11 @@ class _AutoCallScreenState extends State<AutoCallScreen>
             _isAutoRunning = false;
             _isPaused = false;
             // idle 상태일 때 첫 번째 고객 정보 유지 (빈칸으로 만들지 않음)
-            if (_customers.isNotEmpty && _currentCustomer == null) {
+            if (_customers.isNotEmpty && _currentCustomer == null && _totalAssignedCount > 0) {
               _currentCustomer = _customers[0];
-              _progress = '1/$_totalCustomerCount';  // 전체 고객 수 사용
+              // remainingCount = 실제 미사용 고객 수
+              final remainingCount = _customers.length;
+              _progress = '$remainingCount/$_totalAssignedCount';
             }
             break;
         }
@@ -200,6 +210,7 @@ class _AutoCallScreenState extends State<AutoCallScreen>
   void _showCompletionDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,  // 바깥 클릭으로 닫기 방지
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF585667),
         shape: RoundedRectangleBorder(
@@ -215,7 +226,14 @@ class _AutoCallScreenState extends State<AutoCallScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              // 확인 버튼 클릭 후 고객 리스트 초기화
+              setState(() {
+                _customers.clear();
+                debugPrint('✅ 완료 후 고객 리스트 초기화');
+              });
+            },
             child: const Text('확인', style: TextStyle(color: Color(0xFFFF0756))),
           ),
         ],
@@ -256,30 +274,39 @@ class _AutoCallScreenState extends State<AutoCallScreen>
         final processedCount = result['processedCount'] ?? 0;
 
         setState(() {
-          _customers = customers.map((customer) => {
-            'customerId': customer['customerId'],
-            'dbId': dbId,  // DB ID 추가
-            'event': customer['eventName'] ?? '-',
-            'phone': customer['phone'] ?? '-',
-            'name': customer['name'] ?? '-',
-            'info1': customer['info1'] ?? '-',
-            'info2': customer['info2'] ?? '-',
-            'info3': customer['info3'] ?? '-',
-            'dataStatus': customer['dataStatus'] ?? '미사용',
-          }).toList();
+          // 미사용 고객만 필터링 (사용완료 제외)
+          _customers = customers
+            .where((customer) => customer['dataStatus'] == '미사용')
+            .map((customer) => {
+              'customerId': customer['customerId'],
+              'dbId': dbId,  // DB ID 추가
+              'event': customer['eventName'] ?? '-',
+              'phone': customer['phone'] ?? '-',
+              'name': customer['name'] ?? '-',
+              'info1': customer['info1'] ?? '-',
+              'info2': customer['info2'] ?? '-',
+              'info3': customer['info3'] ?? '-',
+              'dataStatus': customer['dataStatus'] ?? '미사용',
+            }).toList();
 
-          // 전체 고객 수 저장 (처음에만)
-          if (_totalCustomerCount == 0) {
-            _totalCustomerCount = totalCount;
+          debugPrint('✅ API에서 받은 고객: ${customers.length}명');
+          debugPrint('✅ 미사용 고객 필터링 후: ${_customers.length}명');
+
+          // 분배받은 총 개수 저장 (처음에만, 절대 변경 금지!)
+          if (_totalAssignedCount == 0 && totalCount > 0) {
+            _totalAssignedCount = totalCount;
+            debugPrint('✅ totalAssignedCount 첫 설정: $_totalAssignedCount (고정)');
+          } else {
+            debugPrint('✅ totalAssignedCount 유지: $_totalAssignedCount (재개 시)');
           }
 
-          // 처리된 고객 수 저장
-          _processedCount = processedCount;
+          // 처리 완료한 고객 수 저장 (API에서 받음)
+          _completedCount = processedCount;
         });
 
         debugPrint('고객 로드 완료: ${_customers.length}명');
-        debugPrint('전체 고객 수: $_totalCustomerCount명');
-        debugPrint('처리된 고객 수: $_processedCount명');
+        debugPrint('분배받은 총 개수: $_totalAssignedCount명 (고정)');
+        debugPrint('처리 완료한 고객 수: $_completedCount명');
       } else if (result['requireLogin'] == true) {
         // JWT 토큰 만료 → 로그인 화면으로
         if (!mounted) return;
@@ -314,10 +341,13 @@ class _AutoCallScreenState extends State<AutoCallScreen>
       }
 
       if (_customers.isEmpty) {
-        debugPrint('고객 데이터가 없습니다.');
+        debugPrint('미사용 고객이 없습니다.');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('고객 데이터가 없습니다.')),
+            const SnackBar(
+              content: Text('미사용 고객이 없습니다. 모든 고객 통화가 완료되었습니다.'),
+              duration: Duration(seconds: 3),
+            ),
           );
         }
         return;
@@ -330,11 +360,11 @@ class _AutoCallScreenState extends State<AutoCallScreen>
       });
 
       // AutoCallService 시작
-      debugPrint('AutoCallService 시작 - totalCount: $_totalCustomerCount, processedCount: $_processedCount');
+      debugPrint('AutoCallService 시작 - totalAssignedCount: $_totalAssignedCount, completedCount: $_completedCount');
       await AutoCallService().start(
         _customers,
-        totalCount: _totalCustomerCount,
-        processedCount: _processedCount,
+        totalCount: _totalAssignedCount,
+        completedCount: _completedCount,
       );
     } catch (e) {
       debugPrint('_startAutoCalling 에러: $e');

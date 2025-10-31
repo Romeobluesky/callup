@@ -19,8 +19,8 @@ class AutoCallService {
   bool isRunning = false;
   List<Map<String, dynamic>> customerQueue = [];
   int currentIndex = 0;  // 큐 내부 인덱스 (항상 0부터 시작)
-  int totalCustomerCount = 0;  // 전체 배정받은 고객 수
-  int processedCount = 0;  // 실제 처리한 고객 수 (표시용, 5명 처리 후 재개 시 5)
+  int totalAssignedCount = 0;  // 분배받은 총 개수 (고정값, 절대 변경 금지!)
+  int completedCount = 0;  // 실제 처리 완료한 고객 수 (통화완료 + 부재중)
   Timer? _countdownTimer;
   Completer<CallResult>? _callCompleter;
   Map<String, dynamic>? _connectedCustomer;  // 통화 연결된 고객 저장
@@ -90,10 +90,13 @@ class AutoCallService {
               debugPrint('통화 종료된 고객: ${_connectedCustomer!['name']} (저장된 정보 사용)');
               debugPrint('통화 시간: $actualCallDuration초');
 
+              // remainingCount = 현재 큐에 남은 고객 수 - 1 (현재 처리 중인 고객 제외)
+              final remainingCount = customerQueue.length - currentIndex - 1;
+
               _stateController.add(AutoCallState(
                 status: AutoCallStatus.callEnded,
                 customer: customerWithDuration,  // 통화 시간이 포함된 고객 정보
-                progress: '${processedCount + 1}/$totalCustomerCount',
+                progress: '$remainingCount/$totalAssignedCount',
               ));
 
               _connectedCustomer = null;  // 사용 후 초기화
@@ -108,24 +111,29 @@ class AutoCallService {
   }
 
   /// 자동 전화 시작
-  Future<void> start(List<Map<String, dynamic>> customers, {int? totalCount, int? processedCount}) async {
+  Future<void> start(List<Map<String, dynamic>> customers, {int? totalCount, int? completedCount}) async {
     debugPrint('=== 자동 전화 시작 ===');
     debugPrint('받은 고객 수: ${customers.length}');
     debugPrint('전달받은 totalCount: $totalCount');
-    debugPrint('전달받은 processedCount: $processedCount');
-    debugPrint('현재 processedCount: ${this.processedCount}');
-    debugPrint('현재 totalCustomerCount: $totalCustomerCount');
+    debugPrint('전달받은 completedCount: $completedCount');
+    debugPrint('현재 completedCount: ${this.completedCount}');
+    debugPrint('현재 totalAssignedCount: $totalAssignedCount');
 
     customerQueue = customers;
     currentIndex = 0;  // 큐 인덱스는 항상 0부터 시작
 
-    // 전체 고객 수 저장 (처음 시작할 때만)
-    if (totalCustomerCount == 0) {
-      totalCustomerCount = totalCount ?? customers.length;
-      this.processedCount = processedCount ?? 0;
-      debugPrint('첫 시작 - totalCustomerCount: $totalCustomerCount, processedCount: ${this.processedCount}');
+    // 전체 고객 수 저장 (처음 시작할 때만 - 절대 변경 금지!)
+    if (totalAssignedCount == 0 && totalCount != null && totalCount > 0) {
+      totalAssignedCount = totalCount;
+      this.completedCount = completedCount ?? 0;
+      debugPrint('첫 시작 - totalAssignedCount: $totalAssignedCount (고정), completedCount: ${this.completedCount}');
     } else {
-      debugPrint('재개 - processedCount: ${this.processedCount}, totalCustomerCount: $totalCustomerCount 유지');
+      // 재개 시: totalAssignedCount는 절대 변경하지 않음!
+      // completedCount만 업데이트 (API에서 받은 값)
+      if (completedCount != null) {
+        this.completedCount = completedCount;
+      }
+      debugPrint('재개 - totalAssignedCount: $totalAssignedCount (유지), completedCount: ${this.completedCount}');
     }
 
     isRunning = true;
@@ -147,12 +155,17 @@ class AutoCallService {
     }
 
     final customer = customerQueue[currentIndex];
-    final progress = '${processedCount + 1}/$totalCustomerCount';
 
-    debugPrint('=== 고객 ${processedCount + 1} 처리 시작 ===');
+    // remainingCount = 현재 큐에 남은 고객 수 (실제 미사용 개수)
+    final remainingCount = customerQueue.length - currentIndex;
+    final progress = '$remainingCount/$totalAssignedCount';
+
+    debugPrint('=== 고객 처리 시작 ===');
     debugPrint('currentIndex: $currentIndex (큐 내부)');
-    debugPrint('processedCount: $processedCount (실제 처리)');
-    debugPrint('totalCustomerCount: $totalCustomerCount (전체)');
+    debugPrint('customerQueue.length: ${customerQueue.length} (큐 전체)');
+    debugPrint('completedCount: $completedCount (누적 처리 완료)');
+    debugPrint('totalAssignedCount: $totalAssignedCount (분배받은 총 개수)');
+    debugPrint('remainingCount: $remainingCount (현재 남은 미사용 개수)');
     debugPrint('progress: $progress');
     debugPrint('고객명: ${customer['name']}');
     debugPrint('전화번호: ${customer['phone']}');
@@ -229,7 +242,7 @@ class AutoCallService {
 
       // 다음 고객으로 (오버레이는 _processNextCustomer에서 업데이트됨)
       currentIndex++;
-      processedCount++;  // 처리한 고객 수 증가
+      completedCount++;  // 처리 완료한 고객 수 증가
       await _processNextCustomer();
     } else {
       // cancelled - 오버레이 숨기기
@@ -300,17 +313,20 @@ class AutoCallService {
 
     // 2. 다음 고객 정보 가져오기
     currentIndex++;  // 현재 고객 건너뛰고 다음으로
-    processedCount++;  // 처리한 고객 수 증가
+    completedCount++;  // 처리 완료한 고객 수 증가
     final nextCustomer = getCurrentCustomer();
 
     if (nextCustomer != null) {
+      // remainingCount = 현재 큐에 남은 고객 수
+      final remainingCount = customerQueue.length - currentIndex;
+
       // 3. 다음 고객 정보로 paused 상태 전송
       _stateController.add(AutoCallState(
         status: AutoCallStatus.paused,
         customer: nextCustomer,
-        progress: '${processedCount + 1}/$totalCustomerCount',
+        progress: '$remainingCount/$totalAssignedCount',
       ));
-      debugPrint('일시정지: 다음 고객 정보 표시 (${processedCount + 1}/$totalCustomerCount)');
+      debugPrint('일시정지: 다음 고객 정보 표시 ($remainingCount/$totalAssignedCount)');
     } else {
       // 4. 더 이상 고객이 없으면 완전 중지
       stop();
@@ -341,16 +357,19 @@ class AutoCallService {
     }
 
     currentIndex++;
-    processedCount++;  // 처리한 고객 수 증가
+    completedCount++;  // 처리 완료한 고객 수 증가
 
     // 다음 고객 정보가 있으면 paused 상태로 전환 (AutoCallScreen에 다음 고객 표시)
     final nextCustomer = getCurrentCustomer();
     if (nextCustomer != null) {
-      debugPrint('다음 고객 정보 표시 (일시정지 상태): ${processedCount + 1}/$totalCustomerCount');
+      // remainingCount = 현재 큐에 남은 고객 수
+      final remainingCount = customerQueue.length - currentIndex;
+
+      debugPrint('다음 고객 정보 표시 (일시정지 상태): $remainingCount/$totalAssignedCount');
       _stateController.add(AutoCallState(
         status: AutoCallStatus.paused,
         customer: nextCustomer,
-        progress: '${processedCount + 1}/$totalCustomerCount',
+        progress: '$remainingCount/$totalAssignedCount',
       ));
     } else {
       // 다음 고객이 없으면 완료
