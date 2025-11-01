@@ -1628,6 +1628,160 @@ if (result['requireLogin'] == true) {
 
 ---
 
-**마지막 업데이트**: 2025-10-24
+### 2025-11-01 - 녹취 파일 자동 업로드 API 호환성 작업
+
+#### 작업 목표
+백엔드 API 명세에 맞춰 녹취 파일 업로드 시스템 수정 및 호환성 확보
+
+#### 구현 내용
+
+**1. API 명세 문서 작성**
+
+생성된 파일: `RECORDING_API_SPEC.md`
+
+백엔드 팀을 위한 종합 API 명세서:
+- POST /api/recordings/upload 엔드포인트 명세
+- Request/Response 형식 상세 설명
+- 데이터베이스 스키마 권장사항 (customers, recordings 테이블)
+- 파일 저장 전략 및 디렉토리 구조
+- 보안 고려사항 (JWT, 파일 검증)
+- Jest 기반 테스트 가이드
+- FAQ 섹션
+
+**2. API 문서 비교 분석**
+
+생성된 파일: `RECORDING_IMPLEMENTATION_REVIEW.md`
+
+API 팀이 제공한 문서와 현재 구현 비교:
+- `API_ENDPOINTS.md` - API 엔드포인트 명세
+- `RECORDING_SYSTEM_SETUP.md` - 실제 구현 문서
+
+발견된 불일치 사항:
+1. **recordedAt 형식 불일치** (HIGH): Unix timestamp → ISO 8601 변환 필요
+2. **파일 크기 검증 누락** (MEDIUM): 50MB 제한 체크 추가 필요
+3. **에러 메시지 개선** (LOW): HTTP 상태 코드별 한글 메시지 추가
+
+**3. RecordingUploadService 수정**
+
+파일: `android/app/src/main/kotlin/com/callup/callup/recording/RecordingUploadService.kt`
+
+**수정 1: ISO 8601 날짜 형식 변환 (Lines 203-206)**
+```kotlin
+// recordedAt을 ISO 8601 형식으로 변환
+val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+val recordedAtISO = dateFormat.format(Date(matchedCall.callTimestamp))
+```
+
+**수정 2: 파일 크기 검증 추가 (Lines 188-194)**
+```kotlin
+// 파일 크기 검증 (50MB 제한)
+val maxSize = 50 * 1024 * 1024L  // 50MB
+if (file.length() > maxSize) {
+    val fileSizeMB = file.length() / (1024.0 * 1024.0)
+    Log.w(TAG, "파일 크기 초과: ${String.format("%.2f", fileSizeMB)}MB (최대 50MB)")
+    throw Exception("파일 크기가 50MB를 초과합니다")
+}
+```
+
+**수정 3: 에러 메시지 개선 (Lines 233-243)**
+```kotlin
+// API 에러 코드별 메시지
+val errorMessage = when (response.code) {
+    401 -> "JWT 토큰이 만료되었습니다"
+    413 -> "파일 크기가 50MB를 초과합니다"
+    415 -> "지원하지 않는 파일 형식입니다"
+    500 -> "서버 오류가 발생했습니다"
+    else -> "업로드 실패: ${response.code}"
+}
+```
+
+**수정 4: 필수 Import 추가 (Lines 25-28)**
+```kotlin
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+```
+
+#### 기술적 세부사항
+
+**ISO 8601 형식 변환**:
+- Before: Unix timestamp (Long) → "1730361600000"
+- After: ISO 8601 (String) → "2025-01-15T14:30:52Z"
+- UTC 시간대 사용으로 시간대 문제 해결
+
+**파일 크기 검증**:
+- 업로드 전 클라이언트 측에서 50MB 제한 확인
+- 네트워크 대역폭 절약
+- 사용자에게 즉시 피드백 제공
+
+**에러 처리 개선**:
+- HTTP 상태 코드별 한글 메시지 매핑
+- 사용자 친화적인 에러 메시지
+- 디버깅을 위한 상세 로깅
+
+#### API 호환성 검증
+
+**변경 전후 비교**:
+
+| 항목 | 변경 전 | 변경 후 | 상태 |
+|------|---------|---------|------|
+| recordedAt 형식 | Unix timestamp | ISO 8601 | ✅ 수정 완료 |
+| 파일 크기 검증 | 없음 | 50MB 제한 체크 | ✅ 추가 완료 |
+| 에러 메시지 | 일반 메시지 | 상태 코드별 한글 | ✅ 개선 완료 |
+| JWT 인증 | Bearer 토큰 | Bearer 토큰 | ✅ 기존 유지 |
+| 파일 형식 | m4a, mp3, amr 등 | m4a, mp3, amr 등 | ✅ 기존 유지 |
+| 업로드 주기 | 10분 | 10분 | ✅ 기존 유지 |
+
+#### 파일 구조
+
+**녹취 시스템 관련 파일**:
+```
+android/app/src/main/kotlin/com/callup/callup/recording/
+├── RecordingUploadService.kt      # 자동 업로드 서비스 (수정됨)
+├── RecordingAutoCollector.kt      # 녹취 파일 스캔
+├── CallRecordingMatcher.kt        # 통화 기록 매칭
+└── RecordingPlayerHelper.kt       # 녹취 재생
+
+lib/services/
+└── recording_service.dart          # Flutter-Native 브릿지
+
+문서/
+├── RECORDING_API_SPEC.md          # API 명세서 (신규)
+└── RECORDING_IMPLEMENTATION_REVIEW.md  # 비교 분석 (신규)
+```
+
+#### 빌드 정보
+
+**APK**:
+- 위치: `build/app/outputs/flutter-apk/app-release.apk`
+- 크기: 24.8MB
+- 상태: API 호환성 수정 완료, 빌드 성공
+
+**의존성**:
+- OkHttp 4.12.0 (HTTP 클라이언트)
+- SimpleDateFormat (날짜 형식 변환)
+
+#### 향후 개선 사항 (선택 사항)
+
+문서에 기록된 추가 개선 가능 항목:
+- [ ] 업로드 실패 시 재시도 로직 (지수 백오프)
+- [ ] 업로드 진행률 알림
+- [ ] 서버 스트리밍 재생 지원 (현재는 로컬 재생만)
+
+#### 테스트 항목
+
+API 연동 후 확인 필요:
+- [ ] 녹취 파일 자동 업로드 (10분 간격)
+- [ ] ISO 8601 형식 서버 파싱 정상 작동
+- [ ] 50MB 초과 파일 업로드 거부
+- [ ] JWT 토큰 만료 시 401 에러 처리
+- [ ] 파일 형식 검증 (m4a, mp3, amr, 3gp, wav, aac)
+- [ ] 중복 업로드 방지 (SharedPreferences)
+
+---
+
+**마지막 업데이트**: 2025-11-01
 **버전**: 1.0.0+4
 **플랫폼**: Android

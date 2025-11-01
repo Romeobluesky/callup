@@ -47,7 +47,9 @@
       "Bash(npm run dev:*)",
       "Bash(taskkill:*)",
       "Bash($null)",
-      "Bash(flutter clean:*)"
+      "Bash(flutter clean:*)",
+      "Bash(Select-String -Pattern \"flutter|CallUp|AutoCall|고객\" -Context 0,2)",
+      "Bash(Select-String -Pattern \"통화 연결됨|CallResultScreen|통화시간|callDuration\" -Context 0,2)"
     ],
     "deny": [],
     "ask": []

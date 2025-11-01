@@ -103,7 +103,7 @@ class AutoCallApiService {
     required int customerId,
     required int dbId,
     required String callResult,
-    required String consultationResult,
+    String? consultationResult,  // nullable로 변경
     String? memo,
     required String callStartTime,
     required String callEndTime,
@@ -118,7 +118,7 @@ class AutoCallApiService {
           'customerId': customerId,
           'dbId': dbId,
           'callResult': callResult,
-          'consultationResult': consultationResult,
+          if (consultationResult != null) 'consultationResult': consultationResult,  // null 체크 추가
           if (memo != null) 'memo': memo,
           'callStartTime': callStartTime,
           'callEndTime': callEndTime,

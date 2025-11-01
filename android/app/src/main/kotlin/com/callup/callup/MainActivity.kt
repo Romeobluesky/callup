@@ -16,11 +16,15 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.callup.callup.recording.RecordingAutoCollector
+import com.callup.callup.recording.RecordingPlayerHelper
+import com.callup.callup.recording.RecordingUploadService
 
 class MainActivity : FlutterActivity() {
     private val FOREGROUND_CHANNEL = "com.callup.callup/foreground"
     private val OVERLAY_CHANNEL = "com.callup.callup/overlay"
     private val PHONE_STATE_CHANNEL = "com.callup.callup/phone_state"
+    private val RECORDING_CHANNEL = "com.callup/recording"
 
     private var telephonyManager: TelephonyManager? = null
     private var phoneStateListener: PhoneStateListener? = null
@@ -137,6 +141,67 @@ class MainActivity : FlutterActivity() {
                 else -> {
                     result.notImplemented()
                 }
+            }
+        }
+
+        // Recording channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, RECORDING_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startAutoUpload" -> {
+                    try {
+                        val intent = Intent(this, RecordingUploadService::class.java)
+                        if (Build.VERSION.SDK_INT >= 26) {  // Android 8.0 (O)
+                            startForegroundService(intent)
+                        } else {
+                            startService(intent)
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("ERROR", "자동 업로드 서비스 시작 실패: ${e.message}", null)
+                    }
+                }
+                "stopAutoUpload" -> {
+                    try {
+                        val intent = Intent(this, RecordingUploadService::class.java)
+                        stopService(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("ERROR", "자동 업로드 서비스 중지 실패: ${e.message}", null)
+                    }
+                }
+                "hasRecording" -> {
+                    val phoneNumber = call.argument<String>("phoneNumber")
+                    if (phoneNumber != null) {
+                        try {
+                            val collector = RecordingAutoCollector(this)
+                            val recordings = collector.scanAllRecordings()
+                            val hasRecording = recordings.any { recording ->
+                                recording.phoneNumber?.contains(phoneNumber) == true ||
+                                phoneNumber.contains(recording.phoneNumber ?: "")
+                            }
+                            result.success(hasRecording)
+                        } catch (e: Exception) {
+                            result.error("ERROR", "녹취 확인 실패: ${e.message}", null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "전화번호가 필요합니다", null)
+                    }
+                }
+                "playRecording" -> {
+                    val phoneNumber = call.argument<String>("phoneNumber")
+                    if (phoneNumber != null) {
+                        try {
+                            val playerHelper = RecordingPlayerHelper(this)
+                            playerHelper.findAndPlayRecording(phoneNumber)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("ERROR", "녹취 재생 실패: ${e.message}", null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "전화번호가 필요합니다", null)
+                    }
+                }
+                else -> result.notImplemented()
             }
         }
 

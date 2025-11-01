@@ -39,3 +39,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // OkHttp for HTTP requests
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+}

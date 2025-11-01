@@ -4,7 +4,7 @@ import '../widgets/custom_bottom_navigation_bar.dart';
 import '../services/auto_call_service.dart';
 import '../services/db_manager.dart';
 import '../services/phone_service.dart';
-import '../services/api/auto_call_api_service.dart';
+import '../services/api/customer_api_service.dart';
 import '../models/auto_call_state.dart';
 import 'dashboard_screen.dart';
 import 'stats_screen.dart';
@@ -180,7 +180,10 @@ class _AutoCallScreenState extends State<AutoCallScreen>
     // customer 객체에서 통화 시간 추출 (기본값 0)
     final callDuration = _currentCustomer!['callDuration'] ?? 0;
     debugPrint('=== CallResultScreen으로 이동 ===');
+    debugPrint('전체 고객 객체: $_currentCustomer');
     debugPrint('고객 정보: ${_currentCustomer!['name']}');
+    debugPrint('customerId: ${_currentCustomer!['customerId']}');
+    debugPrint('dbId: ${_currentCustomer!['dbId']}');
     debugPrint('통화 시간 (callDuration): $callDuration초');
 
     Navigator.push(
@@ -263,48 +266,63 @@ class _AutoCallScreenState extends State<AutoCallScreen>
       debugPrint('DB ID: $dbId');
       debugPrint('제목: ${selectedDB['title']}');
 
-      // API에서 고객 큐 가져오기 (100명)
-      final result = await AutoCallApiService.startAutoCalling(
-        dbId: dbId,
-        count: 100,
+      // /api/agent/customers API 사용 (고객 페이지와 동일)
+      final result = await CustomerApiService.searchCustomers(
+        limit: 1000,  // 최대 1000명
       );
 
       if (!mounted) return;
 
       if (result['success'] == true && result['customers'] != null) {
-        final customers = result['customers'] as List;
-        final totalCount = result['totalCount'] ?? customers.length;
-        final processedCount = result['processedCount'] ?? 0;
+        final allCustomers = result['customers'] as List;
+
+        // 첫 번째 고객 데이터 로그 확인
+        if (allCustomers.isNotEmpty) {
+          debugPrint('=== API 응답 첫 번째 고객 데이터 ===');
+          debugPrint('전체 객체: ${allCustomers[0]}');
+          debugPrint('customerId: ${allCustomers[0]['customerId']}');
+          debugPrint('dbId: ${allCustomers[0]['dbId']}');
+          debugPrint('status: ${allCustomers[0]['status']}');
+          debugPrint('eventName: ${allCustomers[0]['eventName']}');
+        }
 
         setState(() {
-          // 미사용 고객만 필터링 (사용완료 제외)
-          _customers = customers
-            .where((customer) => customer['dataStatus'] == '미사용')
+          // 선택한 DB의 미사용 고객만 필터링
+          _customers = allCustomers
+            .where((customer) {
+              final status = customer['status'] ?? '미사용';
+              final customerDbId = customer['dbId'];
+              // dbId가 일치하고 미사용인 고객만
+              return status == '미사용' && customerDbId == dbId;
+            })
             .map((customer) => {
               'customerId': customer['customerId'],
-              'dbId': dbId,  // DB ID 추가
+              'dbId': customer['dbId'],
               'event': customer['eventName'] ?? '-',
               'phone': customer['phone'] ?? '-',
               'name': customer['name'] ?? '-',
               'info1': customer['info1'] ?? '-',
               'info2': customer['info2'] ?? '-',
               'info3': customer['info3'] ?? '-',
-              'dataStatus': customer['dataStatus'] ?? '미사용',
+              'dataStatus': customer['status'] ?? '미사용',
             }).toList();
 
-          debugPrint('✅ API에서 받은 고객: ${customers.length}명');
-          debugPrint('✅ 미사용 고객 필터링 후: ${_customers.length}명');
+          debugPrint('✅ API에서 받은 전체 고객: ${allCustomers.length}명');
+          debugPrint('✅ DB $dbId의 미사용 고객: ${_customers.length}명');
+
+          // 분배받은 총 개수 = 해당 DB의 전체 고객 수 (미사용 + 사용완료)
+          final dbTotalCount = allCustomers.where((c) => c['dbId'] == dbId).length;
 
           // 분배받은 총 개수 저장 (처음에만, 절대 변경 금지!)
-          if (_totalAssignedCount == 0 && totalCount > 0) {
-            _totalAssignedCount = totalCount;
+          if (_totalAssignedCount == 0 && dbTotalCount > 0) {
+            _totalAssignedCount = dbTotalCount;
             debugPrint('✅ totalAssignedCount 첫 설정: $_totalAssignedCount (고정)');
           } else {
             debugPrint('✅ totalAssignedCount 유지: $_totalAssignedCount (재개 시)');
           }
 
-          // 처리 완료한 고객 수 저장 (API에서 받음)
-          _completedCount = processedCount;
+          // 처리 완료한 고객 수 = 전체 - 미사용
+          _completedCount = _totalAssignedCount - _customers.length;
         });
 
         debugPrint('고객 로드 완료: ${_customers.length}명');

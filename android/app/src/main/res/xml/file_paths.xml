@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 외부 저장소 전체 경로 (녹취 파일이 저장된 위치) -->
+    <external-path name="external_files" path="." />
+
+    <!-- 제조사별 녹음 경로 -->
+    <!-- /storage/emulated/0/Call recordings/ -->
+    <external-path name="call_recordings" path="Call recordings/" />
+
+    <!-- /storage/emulated/0/Recordings/Call/ -->
+    <external-path name="recordings_call" path="Recordings/Call/" />
+
+    <!-- /storage/emulated/0/MIUI/sound_recorder/call_rec/ (샤오미) -->
+    <external-path name="miui_recordings" path="MIUI/sound_recorder/call_rec/" />
+
+    <!-- /storage/emulated/0/SamsungRecorder/Call/ (삼성) -->
+    <external-path name="samsung_recordings" path="SamsungRecorder/Call/" />
+
+    <!-- /storage/emulated/0/recorder/call/ (LG) -->
+    <external-path name="lg_recordings" path="recorder/call/" />
+
+    <!-- /storage/emulated/0/Recorder/ -->
+    <external-path name="recorder" path="Recorder/" />
+
+    <!-- /storage/emulated/0/Voice Recorder/ -->
+    <external-path name="voice_recorder" path="Voice Recorder/" />
+</paths>

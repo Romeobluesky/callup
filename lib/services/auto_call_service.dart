@@ -86,12 +86,11 @@ class AutoCallService {
               debugPrint('통화 종료 시간 (callEndTime): $callEndTime');
               debugPrint('네이티브 callDuration: $callDuration초');
 
-              // _callStartTime이 있으면 실제 통화 시간 계산, 없으면 네이티브 값 사용
-              final actualCallDuration = _callStartTime != null
-                  ? callEndTime.difference(_callStartTime!).inSeconds
-                  : callDuration;
+              // 네이티브에서 측정한 실제 통화 시간 사용 (가장 정확함)
+              // PhoneState가 OFFHOOK(통화 시작) ~ IDLE(통화 종료) 시간을 정확히 측정
+              final actualCallDuration = callDuration;
 
-              debugPrint('최종 계산된 통화 시간 (actualCallDuration): $actualCallDuration초');
+              debugPrint('최종 사용 통화 시간: $actualCallDuration초 (네이티브 측정값)');
 
               // 통화 시간이 0초인 경우 경고
               if (actualCallDuration == 0) {
@@ -143,6 +142,15 @@ class AutoCallService {
     debugPrint('전달받은 completedCount: $completedCount');
     debugPrint('현재 completedCount: ${this.completedCount}');
     debugPrint('현재 totalAssignedCount: $totalAssignedCount');
+
+    // 첫 번째 고객 데이터 확인
+    if (customers.isNotEmpty) {
+      debugPrint('첫 번째 고객 데이터 전체: ${customers[0]}');
+      debugPrint('customerId: ${customers[0]['customerId']}');
+      debugPrint('dbId: ${customers[0]['dbId']}');
+      debugPrint('name: ${customers[0]['name']}');
+      debugPrint('phone: ${customers[0]['phone']}');
+    }
 
     customerQueue = customers;
     currentIndex = 0;  // 큐 인덱스는 항상 0부터 시작
@@ -399,11 +407,9 @@ class AutoCallService {
     // 통화 연결된 고객 정보 저장
     _connectedCustomer = getCurrentCustomer();
 
-    // 통화 시작 시간 기록 (아직 기록되지 않은 경우)
-    if (_callStartTime == null) {
-      _callStartTime = DateTime.now();
-      debugPrint('통화 시작 시간 기록: $_callStartTime');
-    }
+    // 통화 시작 시간 기록 (오버레이 "통화 연결됨" 버튼 클릭 시점 = 실제 통화 시작)
+    _callStartTime = DateTime.now();
+    debugPrint('통화 시작 시간 기록 (오버레이 버튼 클릭): $_callStartTime');
 
     if (_callCompleter != null && !_callCompleter!.isCompleted) {
       _callCompleter!.complete(CallResult.connected);

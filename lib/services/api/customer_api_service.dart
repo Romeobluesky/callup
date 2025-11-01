@@ -9,6 +9,7 @@ class CustomerApiService {
 
   /// 고객 검색 (상담원 배정 고객)
   /// GET /api/agent/customers
+  /// 정렬 순서: 1. 최근 통화, 2. 미사용 중 이벤트 최근 등록일
   static Future<Map<String, dynamic>> searchCustomers({
     String? name,
     String? phone,
@@ -27,6 +28,11 @@ class CustomerApiService {
         queryParams += queryParams.isEmpty ? '?' : '&';
         queryParams += 'data_status=$callResult';
       }
+
+      // 정렬 파라미터 추가
+      // sortBy=custom: 1. 최근 통화, 2. 미사용 중 이벤트 최근 등록일
+      queryParams += queryParams.isEmpty ? '?' : '&';
+      queryParams += 'sortBy=custom&sortOrder=desc';
 
       // API 호출
       final data = await _client.get('${ApiConfig.agentCustomers}$queryParams');

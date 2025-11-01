@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_navigation_bar.dart';
 import '../widgets/customer_detail_popup.dart';
 import '../services/api/customer_api_service.dart';
+import '../services/recording_service.dart';
 import 'dashboard_screen.dart';
 import 'auto_call_screen.dart';
 import 'stats_screen.dart';
@@ -94,14 +95,17 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> with Widget
         final customers = result['customers'] as List<dynamic>;
         final pagination = result['pagination'] as Map<String, dynamic>;
 
+        // 고객 데이터를 정렬 순서에 맞게 정렬
+        final sortedCustomers = _sortCustomers(customers.map((c) => c as Map<String, dynamic>).toList());
+
         setState(() {
-          _customerData = customers.map((c) => c as Map<String, dynamic>).toList();
+          _customerData = sortedCustomers;
           _filteredCustomerData = _customerData;
           _totalPages = pagination['totalPages'] ?? 1;
           _isLoading = false;
         });
 
-        debugPrint('고객 데이터 로드 완료: ${customers.length}개');
+        debugPrint('고객 데이터 로드 완료: ${customers.length}개 (정렬 적용됨)');
       } else {
         setState(() {
           _isLoading = false;
@@ -123,6 +127,72 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> with Widget
         );
       }
     }
+  }
+
+  // 고객 데이터 정렬
+  // 정렬 순서: 1. 최근 통화 (사용완료), 2. 미사용 중 이벤트 최근 등록일
+  List<Map<String, dynamic>> _sortCustomers(List<Map<String, dynamic>> customers) {
+    return customers..sort((a, b) {
+      // 데이터 상태 추출 (camelCase 또는 snake_case)
+      final aStatus = a['status'] ?? a['dataStatus'] ?? a['data_status'] ?? '미사용';
+      final bStatus = b['status'] ?? b['dataStatus'] ?? b['data_status'] ?? '미사용';
+
+      // 통화 일시 추출
+      final aCallDateTime = a['callDateTime'] ?? a['call_datetime'];
+      final bCallDateTime = b['callDateTime'] ?? b['call_datetime'];
+
+      // 업로드 날짜 추출
+      final aUploadDate = a['dbDate'] ?? a['date'] ?? a['created_at'] ?? a['uploadDate'];
+      final bUploadDate = b['dbDate'] ?? b['date'] ?? b['created_at'] ?? b['uploadDate'];
+
+      // 1순위: 사용완료(통화 완료) 고객이 먼저
+      if (aStatus == '사용완료' && bStatus != '사용완료') return -1;
+      if (aStatus != '사용완료' && bStatus == '사용완료') return 1;
+
+      // 2순위: 사용완료 고객끼리는 최근 통화 순
+      if (aStatus == '사용완료' && bStatus == '사용완료') {
+        if (aCallDateTime == null && bCallDateTime == null) return 0;
+        if (aCallDateTime == null) return 1;
+        if (bCallDateTime == null) return -1;
+
+        try {
+          final aDate = DateTime.parse(aCallDateTime.toString());
+          final bDate = DateTime.parse(bCallDateTime.toString());
+          return bDate.compareTo(aDate); // 최근 통화 순 (내림차순)
+        } catch (e) {
+          debugPrint('통화 일시 파싱 오류: $e');
+          return 0;
+        }
+      }
+
+      // 3순위: 미사용 고객끼리는 최근 등록일 순
+      if (aUploadDate == null && bUploadDate == null) return 0;
+      if (aUploadDate == null) return 1;
+      if (bUploadDate == null) return -1;
+
+      try {
+        final aDateStr = aUploadDate.toString();
+        final bDateStr = bUploadDate.toString();
+
+        // ISO 8601 형식에서 날짜 부분만 추출 (2025-10-24T00:00:00.000Z → 2025-10-24)
+        String extractDate(String dateStr) {
+          if (dateStr.contains('T')) {
+            return dateStr.split('T')[0];
+          }
+          if (dateStr.contains(' ')) {
+            return dateStr.split(' ')[0];
+          }
+          return dateStr;
+        }
+
+        final aDate = DateTime.parse(extractDate(aDateStr));
+        final bDate = DateTime.parse(extractDate(bDateStr));
+        return bDate.compareTo(aDate); // 최근 등록일 순 (내림차순)
+      } catch (e) {
+        debugPrint('등록일 파싱 오류: $e');
+        return 0;
+      }
+    });
   }
 
   // 검색 필터링 (API 호출)
@@ -568,6 +638,7 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> with Widget
         final normalizedCustomer = {
           'customerId': customerId,
           'dbId': dbId,
+          'event': eventName,  // CallResultScreen에서 'event' 필드 우선 확인
           'eventName': eventName,
           'customerPhone': customerPhone,
           'customerName': customerName,
@@ -587,7 +658,13 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> with Widget
         showDialog(
           context: context,
           builder: (context) => CustomerDetailPopup(customer: normalizedCustomer),
-        );
+        ).then((result) {
+          // 팝업이 닫힐 때 result == true이면 데이터 업데이트됨 → 새로고침
+          if (result == true && mounted) {
+            debugPrint('고객 데이터 업데이트됨 → 새로고침');
+            _loadCustomerData(searchQuery: _searchController.text.isEmpty ? null : _searchController.text);
+          }
+        });
       },
       child: Container(
         width: width,
@@ -774,12 +851,30 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> with Widget
                   ),
                   // 녹취 아이콘 (hasAudio가 실제로 true인 경우만)
                   if (hasAudio)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: Icon(
-                        Icons.volume_up,
-                        color: Color(0xFFFFCDDD),
-                        size: 26,
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          debugPrint('녹취 재생 시작: $customerPhone');
+                          await RecordingService.playRecording(customerPhone);
+                        } catch (e) {
+                          debugPrint('녹취 재생 오류: $e');
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('녹취 재생 실패: $e'),
+                                backgroundColor: const Color(0xFFFF0756),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.only(left: 8),
+                        child: Icon(
+                          Icons.volume_up,
+                          color: Color(0xFFFFCDDD),
+                          size: 26,
+                        ),
                       ),
                     ),
                 ],

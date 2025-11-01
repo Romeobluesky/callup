@@ -28,13 +28,15 @@ class _CallResultScreenState extends State<CallResultScreen> {
   final int _selectedIndex = 1;
 
   String _callResult = '통화성공';
-  String _consultResult = '가망고객';
-  DateTime? _reservationDate;
+  String? _consultResult;  // null 허용 (빈 값 가능)
+  DateTime? _reservationDate = DateTime.now();  // 오늘 날짜로 디폴트 설정
   TimeOfDay? _reservationTime;
   final TextEditingController _memoController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _memoFocusNode = FocusNode();
 
   final List<String> _callResultOptions = ['통화성공', '부재중', '없는번호'];
-  final List<String> _consultResultOptions = ['재통화', '가망고객', '가입유치', '거절', '수신거부'];
+  final List<String?> _consultResultOptions = [null, '재통화', '가망고객', '가입유치', '거절', '수신거부'];  // null 옵션 추가
 
   @override
   void initState() {
@@ -44,11 +46,29 @@ class _CallResultScreenState extends State<CallResultScreen> {
     debugPrint('customerId: ${widget.customer['customerId']}');
     debugPrint('dbId: ${widget.customer['dbId']}');
     debugPrint('통화 시간: ${widget.callDuration}초');
+
+    // 메모란 포커스 리스너 추가 (클릭 시 자동 스크롤)
+    _memoFocusNode.addListener(() {
+      if (_memoFocusNode.hasFocus) {
+        // 키보드가 올라오고 레이아웃이 완료될 때까지 대기
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _memoController.dispose();
+    _scrollController.dispose();
+    _memoFocusNode.dispose();
     super.dispose();
   }
 
@@ -217,14 +237,19 @@ class _CallResultScreenState extends State<CallResultScreen> {
 
   Future<void> _saveCallResult() async {
     try {
-      // 고객 ID와 DB ID 확인
-      final customerId = widget.customer['customerId'];
-      final dbId = widget.customer['dbId'];
+      // 고객 ID와 DB ID 확인 (camelCase 또는 snake_case 지원)
+      final customerId = widget.customer['customerId'] ?? widget.customer['customer_id'];
+      final dbId = widget.customer['dbId'] ?? widget.customer['db_id'];
+
+      debugPrint('=== 통화 결과 저장 시도 ===');
+      debugPrint('전체 고객 객체: ${widget.customer}');
+      debugPrint('customerId: $customerId');
+      debugPrint('dbId: $dbId');
 
       if (customerId == null || dbId == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('고객 정보가 없습니다.')),
+          const SnackBar(content: Text('고객 정보가 없습니다. (customerId 또는 dbId 누락)')),
         );
         return;
       }
@@ -314,8 +339,8 @@ class _CallResultScreenState extends State<CallResultScreen> {
           AutoCallService().resumeAfterResult();
         }
 
-        // AutoCallScreen으로 복귀
-        Navigator.pop(context);
+        // 결과값과 함께 복귀 (true = 데이터 업데이트됨)
+        Navigator.pop(context, true);
       } else if (result['requireLogin'] == true) {
         // JWT 토큰 만료
         if (!mounted) return;
@@ -350,18 +375,24 @@ class _CallResultScreenState extends State<CallResultScreen> {
     final labelWidth = availableWidth * 0.35;
     final buttonWidth = availableWidth * 0.20;
 
+    // 키보드 높이 가져오기
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF585667),
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: false,  // 네비게이션 바 고정
         body: Stack(
           children: [
             SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 95),
+                controller: _scrollController,
+                padding: EdgeInsets.only(
+                  bottom: 95 + keyboardHeight,  // 네비게이션(95) + 키보드 높이
+                ),
                 child: Column(
                   children: [
                     _buildHeader(),
@@ -628,7 +659,7 @@ class _CallResultScreenState extends State<CallResultScreen> {
                 _buildTableCell('제목', labelWidth, isHeader: true, hasTopBorder: true),
                 Expanded(
                   child: _buildTableCell(
-                    widget.customer['eventName'] ?? widget.customer['event_name'] ?? '',
+                    widget.customer['event'] ?? widget.customer['eventName'] ?? widget.customer['event_name'] ?? '',
                     null,
                     hasTopBorder: true,
                     hasLeftBorder: false
@@ -655,24 +686,24 @@ class _CallResultScreenState extends State<CallResultScreen> {
             const SizedBox(height: 24),
             _buildInfoRow(
               '전화번호',
-              widget.customer['customerPhone'] ?? widget.customer['customer_phone'] ?? '',
+              widget.customer['phone'] ?? widget.customer['customerPhone'] ?? widget.customer['customer_phone'] ?? '',
               labelWidth,
               isFirst: true,
               valueColor: const Color(0xFF383743)
             ),
             _buildInfoRow(
               '고객정보1',
-              widget.customer['customerName'] ?? widget.customer['customer_name'] ?? '',
+              widget.customer['name'] ?? widget.customer['customerName'] ?? widget.customer['customer_name'] ?? '',
               labelWidth
             ),
             _buildInfoRow(
               '고객정보2',
-              widget.customer['customerInfo1'] ?? widget.customer['customer_info1'] ?? '',
+              widget.customer['info1'] ?? widget.customer['customerInfo1'] ?? widget.customer['customer_info1'] ?? '',
               labelWidth
             ),
             _buildInfoRow(
               '고객정보3',
-              widget.customer['customerInfo2'] ?? widget.customer['customer_info2'] ?? '',
+              widget.customer['info2'] ?? widget.customer['customerInfo2'] ?? widget.customer['customer_info2'] ?? '',
               labelWidth
             ),
             // 통화결과 / 상담결과 (등록 버튼 제거)
@@ -691,7 +722,7 @@ class _CallResultScreenState extends State<CallResultScreen> {
                 _buildTableCell('상담결과', labelWidth, isHeader: true),
                 Expanded(child: _buildDropdown(_consultResult, _consultResultOptions, (value) {
                   setState(() {
-                    _consultResult = value!;
+                    _consultResult = value;  // null 허용
                   });
                 })),
               ],
@@ -834,6 +865,7 @@ class _CallResultScreenState extends State<CallResultScreen> {
                     ),
                     child: TextField(
                       controller: _memoController,
+                      focusNode: _memoFocusNode,
                       maxLines: null,
                       style: const TextStyle(
                         fontSize: 12,
@@ -978,7 +1010,7 @@ class _CallResultScreenState extends State<CallResultScreen> {
     );
   }
 
-  Widget _buildDropdown(String value, List<String> options, Function(String?) onChanged) {
+  Widget _buildDropdown(String? value, List<String?> options, Function(String?) onChanged) {
     return Container(
       height: 35,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -989,7 +1021,7 @@ class _CallResultScreenState extends State<CallResultScreen> {
         ),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
+        child: DropdownButton<String?>(
           value: value,
           isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFF9F8EB), size: 20),
@@ -999,10 +1031,17 @@ class _CallResultScreenState extends State<CallResultScreen> {
             fontWeight: FontWeight.bold,
             color: Color(0xFFF9F8EB),
           ),
-          items: options.map((String option) {
-            return DropdownMenuItem<String>(
+          items: options.map((String? option) {
+            return DropdownMenuItem<String?>(
               value: option,
-              child: Text(option),
+              child: Text(
+                option ?? '선택 안함',  // null이면 '선택 안함' 표시
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: option == null ? const Color(0xFFF9F8EB).withValues(alpha: 0.6) : const Color(0xFFF9F8EB),
+                ),
+              ),
             );
           }).toList(),
           onChanged: onChanged,

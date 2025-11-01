@@ -62,7 +62,7 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
     }
   }
 
-  void _handleCallEnded() {
+  Future<void> _handleCallEnded() async {
     if (_callStartTime == null) return;
 
     final callDuration = DateTime.now().difference(_callStartTime!);
@@ -73,8 +73,8 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
       _callStartTime = null;
     });
 
-    Navigator.of(context).pop();
-    Navigator.push(
+    // 팝업은 열어둔 채로 CallResultScreen으로 이동
+    final result = await Navigator.push(
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 200),
@@ -99,6 +99,20 @@ class _CustomerDetailPopupState extends State<CustomerDetailPopup> with WidgetsB
         },
       ),
     );
+
+    // CallResultScreen에서 돌아온 후 팝업 닫기
+    if (!mounted) return;
+
+    debugPrint('CallResultScreen 결과: $result');
+
+    // 결과 입력이 완료되었으면 (result == true) CustomerSearchScreen에 업데이트 신호 전달
+    if (result == true) {
+      debugPrint('통화 결과 저장 완료 → 팝업 닫으면서 CustomerSearchScreen에 알림');
+      Navigator.of(context).pop(true);
+    } else {
+      debugPrint('통화 결과 미저장 → 팝업만 닫기');
+      Navigator.of(context).pop();
+    }
   }
 
   String _formatReservation(dynamic date, dynamic time) {
